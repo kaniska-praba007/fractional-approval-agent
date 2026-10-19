@@ -1,5 +1,7 @@
 # Agent Instructions
 
+> **Read First:** Before starting any work, read [docs/START_HERE.md](docs/START_HERE.md) and [docs/DECISIONS.md](docs/DECISIONS.md).
+
 Read this file first and follow it for the whole session. The architecture, money model, settlement order, state machine and scope are in `docs/CONTEXT.md`. If a task conflicts with it, stop and ask the human lead instead of choosing.
 
 ## Start of work
