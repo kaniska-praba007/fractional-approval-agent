@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Environment variables & local secrets (AGENTS.md)
+.env
+.env*.local
+.env.local

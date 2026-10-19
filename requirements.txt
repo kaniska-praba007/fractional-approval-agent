@@ -1,4 +1,4 @@
 hyperon==0.2.10
-pytest
-streamlit
-pydantic
+pytest==9.1.1
+streamlit==1.66.0
+pydantic==2.14.1
