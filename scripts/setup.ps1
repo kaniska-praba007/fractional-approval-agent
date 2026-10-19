@@ -9,10 +9,36 @@ $ErrorActionPreference = "Stop"
 
 Write-Host "=== Setting up Fractional Approval Agent (Windows) ===" -ForegroundColor Cyan
 
-# 1. Verify Python availability
-$pythonCmd = Get-Command python -ErrorAction SilentlyContinue
-if (-not $pythonCmd) {
-    Write-Error "Python 3 is required but was not found on PATH. Please install Python 3.10+."
+# 1. Verify Python availability (Hyperon 0.2.10 requires Python 3.10 - 3.12)
+$pyLauncher = Get-Command py -ErrorAction SilentlyContinue
+$pyExecutable = $null
+$pyArgs = @("-m", "venv")
+
+if ($pyLauncher) {
+    foreach ($ver in @("-3.12", "-3.11", "-3.10")) {
+        $testVer = & py $ver -c "import sys; print(sys.version_info.major)" 2>$null
+        if ($testVer -eq "3") {
+            $pyExecutable = "py"
+            $pyArgs = @($ver, "-m", "venv")
+            break
+        }
+    }
+}
+
+if (-not $pyExecutable) {
+    $sysPy = Get-Command python -ErrorAction SilentlyContinue
+    if ($sysPy) {
+        $major = & python -c "import sys; print(sys.version_info.major)" 2>$null
+        $minor = & python -c "import sys; print(sys.version_info.minor)" 2>$null
+        if ($major -eq "3" -and [int]$minor -ge 10 -and [int]$minor -le 12) {
+            $pyExecutable = "python"
+            $pyArgs = @("-m", "venv")
+        }
+    }
+}
+
+if (-not $pyExecutable) {
+    Write-Error "Python 3.10 - 3.12 is required for Hyperon 0.2.10. Please install Python 3.12 (e.g. 'winget install Python.Python.3.12')."
     exit 1
 }
 
@@ -21,8 +47,8 @@ $venvPath = Join-Path $PSScriptRoot "..\.venv"
 $venvPython = Join-Path $venvPath "Scripts\python.exe"
 
 if (-not (Test-Path $venvPython)) {
-    Write-Host "[1/4] Creating virtual environment (.venv)..." -ForegroundColor Yellow
-    python -m venv $venvPath
+    Write-Host "[1/4] Creating virtual environment (.venv) using $pyExecutable $pyArgs..." -ForegroundColor Yellow
+    & $pyExecutable @pyArgs $venvPath
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Failed to create virtual environment."
         exit 1

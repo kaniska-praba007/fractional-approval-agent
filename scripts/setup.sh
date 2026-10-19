@@ -7,9 +7,20 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 echo "=== Setting up Fractional Approval Agent (Linux/macOS) ==="
 
-# 1. Verify Python 3 availability
-if ! command -v python3 &>/dev/null; then
-    echo "ERROR: python3 is required but was not found on PATH. Please install Python 3.10+." >&2
+# 1. Verify Python availability (Hyperon 0.2.10 requires Python 3.10 - 3.12)
+PYTHON_BIN=""
+for candidate in python3.12 python3.11 python3.10 python3; do
+    if command -v "$candidate" &>/dev/null; then
+        minor=$("$candidate" -c "import sys; print(sys.version_info.minor)" 2>/dev/null || echo "99")
+        if [ "$minor" -le 12 ] && [ "$minor" -ge 10 ]; then
+            PYTHON_BIN="$candidate"
+            break
+        fi
+    fi
+done
+
+if [ -z "$PYTHON_BIN" ]; then
+    echo "ERROR: Python 3.10 - 3.12 is required for Hyperon 0.2.10. Please install Python 3.12." >&2
     exit 1
 fi
 
@@ -18,8 +29,8 @@ VENV_DIR="${ROOT_DIR}/.venv"
 VENV_PYTHON="${VENV_DIR}/bin/python"
 
 if [ ! -f "${VENV_PYTHON}" ]; then
-    echo "[1/4] Creating virtual environment (.venv)..."
-    python3 -m venv "${VENV_DIR}"
+    echo "[1/4] Creating virtual environment (.venv) using ${PYTHON_BIN}..."
+    "${PYTHON_BIN}" -m venv "${VENV_DIR}"
 else
     echo "[1/4] Virtual environment already exists (.venv)."
 fi
