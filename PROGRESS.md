@@ -17,7 +17,7 @@
 | **API Key & Security** | **SECURED** | Level B (Executed) | Key isolated in gitignored `.env`; template scrubbed in `.env.example`. |
 | **Omega Framework** | **VERIFIED (LIVE GEMINI)** | Level B (Executed) | Docker image built, OpenAIAPI-to-Gemini connection verified, native tool-calling & MeTTa reduction confirmed live. |
 | **Financial & Domain Rules** | **TASK 1 VERIFIED** | Level B (Executed) | Synthetic registry `data/artworks.json`, independent test oracle, SC-01 to SC-09 scenarios, 31/31 tests passing. |
-| **Hyperon MeTTa Settlement** | **READY TO IMPLEMENT** | Level B (Prototype verified) | Native integer floor division & Atom API traversal verified. Next: `metta/1.3-settlement-rule`. |
+| **Hyperon MeTTa Settlement** | **TASK 2 VERIFIED** | Level B (Executed) | Fiduciary settlement & rejection rules in `metta/royalties.metta`, native Atom API bridge, 42/42 tests passing. |
 | **Audit Trail & Override** | **PENDING** | - | Append-only symbolic audit log & live re-evaluation with manager override. |
 | **Compliance UI** | **PENDING** | - | Streamlit dashboard for application review, "Why?" inspection, and overrides. |
 
@@ -148,15 +148,56 @@
 
 ---
 
+### 6. MeTTa Settlement Rules & AtomSpace Bridge (Task 2: VERIFIED)
+- **Fiduciary Settlement Rules (`metta/royalties.metta`):**
+  - Authoritative pure-symbolic settlement rules strictly following CONTEXT §6 financial ordering.
+  - Zero floats, zero decimals in rules or comments (CI guard verified).
+  - MeTTa computes:
+    - Platform fee: `(/ (* gross fee-bps) 10000)`
+    - Net proceeds: `(- gross platform-fee)`
+    - Artist royalty: `(/ (* net royalty-bps) 10000)`
+    - Community fund cut: `(/ (* net community-bps) 10000)`
+    - Distributable pool: `(- (- net artist-royalty) community-cut)`
+    - Co-owner recursive split: `(/ (* pool bps) 10000)`
+    - Deterministic single-cent dust sweep: `(- pool (sum-shares))` routed to community fund
+    - Mathematical conservation assertion: `(proof ... conserved)`
+  - Guardrail Rejections:
+    - Below reserve price: `(rejected BELOW_RESERVE <gross> <reserve>)`
+    - Manager override below floor covenant: `(rejected OVERRIDE_BELOW_FLOOR <override> <floor>)`
+    - Manager override decreasing community cut: `(rejected OVERRIDE_NOT_ALLOWED <override> <stored>)`
+    - Contested asset status: `(rejected ARTWORK_CONTESTED <status>)`
+    - Currency mismatch: `(rejected UNSUPPORTED_CURRENCY <currency> <expected>)`
+- **Direct MeTTa Assertion Test Suite (`metta/tests/test_royalties.metta`):**
+  - Tests run directly on pinned `hyperon==0.2.10` runtime using native `assertEqual`:
+    - Test 1 (SC-01 HFA-101 Resale): `[()]` (PASSED)
+    - Test 2 (SC-02 HFA-101 Below Reserve): `[()]` (PASSED)
+    - Test 3 (SC-03 HFA-102 Prompt Injection Stored Rule): `[()]` (PASSED)
+    - Test 4 (SC-04 HFA-103 Manager Override Upward): `[()]` (PASSED)
+    - Test 5 (SC-05 HFA-101 Override Below Floor): `[()]` (PASSED)
+    - Test 6 (SC-06 TEST-DUST Precision Split): `[()]` (PASSED)
+  - Executed via `tests/test_royalties_metta.py` under pytest.
+- **Extended AtomSpace Bridge (`agent/bridge.py`):**
+  - Accepts uppercase IDs (e.g. `HFA-101`, `TEST-DUST`), hex wallets (`0x...`), currency codes (`USD`), and status symbols.
+  - Rejects floats and boolean inputs with `ReasoningStatus.INVALID_INPUT`.
+  - Facts loaded strictly from `data/artworks.json` via `load_artwork_facts` / `load_registry_facts`.
+  - Atom traversal uses 100% native Hyperon Atom API (`AtomKind.EXPR`, `atom.get_children()`, `atom.get_name()`, `atom.get_object().content`). Zero string splitting.
+  - Fails closed on empty results (`ReasoningStatus.NO_RESULT`) or multiple results (`ReasoningStatus.ENGINE_ERROR`).
+  - Returns strongly-typed `SettlementProof` with verified conservation invariant and `SettlementRejection` with exact error codes.
+- **Integration Test Suite (`tests/test_bridge_settlement.py`):**
+  - End-to-end integration covering SC-01 through SC-06.
+  - Float and boolean rejection tests.
+  - Fail-closed defense tests on multiple results and unknown artwork entities.
+  - 20-iteration seeded pseudo-random fuzz tests matching MeTTa proof against test oracle.
+  - **Full Test Suite Status: 42 passed in 7.79s.**
+
+---
+
 ## Next Steps & Roadmap
 
-1. **MeTTa Settlement Rules & AtomSpace Bridge (`metta/1.3-settlement-rule`):**
-   - Author pure symbolic settlement rules in `metta/royalties.metta`.
-   - Update `agent/bridge.py` to accept uppercase IDs, reject floats/bools, traverse atoms via native Hyperon Atom API (no `str()` splitting), and load facts from `data/artworks.json`.
-   - Test MeTTa rules directly with native `assertEqual` tests against pinned `hyperon==0.2.10`.
-2. **Manager Override & Glass-Box Audit Trail (`agent/audit.py`, `agent/override.py`):**
+1. **Manager Override & Glass-Box Audit Trail (`agent/audit.py`, `agent/override.py`):**
    - Construct append-only audit trail logging input facts, evaluated rules, timestamps, and symbolic conclusions.
-   - Implement live re-evaluation upon manager override with non-destructive state retention.
-3. **Interactive Multi-Page Streamlit App (`app/`):**
+   - Implement live re-evaluation upon manager override with non-destructive state retention and 15-character rationale enforcement.
+2. **Interactive Multi-Page Streamlit App (`app/`):**
    - Multi-page UI (Catalog, Settlement, Manager Console, Treasury) showcasing real-time verdict inspection, audit trail viewer, and manager sign-off workflows.
+
 
