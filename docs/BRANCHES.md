@@ -28,6 +28,7 @@ Per `AGENTS.md`:
 | `docs/7.0-branch-guide` | **Active** | `main` | Lead | Branch guide, proof contract, fixtures, and teammate prompt specifications. |
 | `agent/2.4-audit-log` | **Planned** | `main` | Teammate | Append-only, hash-chained audit log with idempotency/nonce check. |
 | `parser/3.1-rule-parser` | **Planned** | `main` | Teammate | Deterministic rule-based bid parser ("12k" -> integer cents) with injection defense. |
+| `agent/2.6-sim-ledger` | **Planned** | `main` | Teammate | Simulated double-entry ledger in integer cents. |
 | `agent/2.5-override-wiring` | **Planned** | `main` | Lead | Bridge wiring to proof shape, override dispatch, and state transition coordinator. |
 | `ui/6.1-dashboard` | **Planned** | `main` | Teammate | Streamlit multi-page interface reading proof fixtures and rendering audit cards. |
 | `docs/7.3-readme-disclosure` | **Planned** | `main` | Teammate | Final `README.md`, setup instructions, architecture map, and `AI_DISCLOSURE.md`. |
@@ -105,7 +106,19 @@ Per `AGENTS.md`:
   Tests: currency normalization, k/m suffixes, punctuation, injection resistance (at least 20 adversarial test cases).
 - **Merge Order:** Can be developed in parallel with Audit Log and Dashboard.
 
-#### 7. `agent/2.5-override-wiring` (Lead-Owned)
+#### 7. `agent/2.6-sim-ledger`
+- **Purpose:** Simulated double-entry ledger in integer cents. Copies verified proof values verbatim and validates that debits and credits sum to zero.
+- **Base:** `main`
+- **Files It May Touch:** `agent/ledger.py`, `tests/test_ledger.py`.
+- **Files Forbidden to Touch:** `metta/*`, `agent/bridge.py`, `data/*`, `app/*`.
+- **Dependencies:** Consumes proof fixtures from `tests/fixtures/proofs/`.
+- **How to Test:**
+  ```powershell
+  pytest tests/test_ledger.py -v
+  ```
+- **Merge Order:** Developed in parallel with Audit Log and Parser.
+
+#### 8. `agent/2.5-override-wiring` (Lead-Owned)
 - **Purpose:** Connect bridge output directly to the proof shape contract, integrate manager override re-evaluation, and enforce the 15-character rationale requirement.
 - **Base:** `main`
 - **Files It May Touch:** `agent/settlement.py`, `agent/override.py`, `tests/test_override.py`.
@@ -117,7 +130,7 @@ Per `AGENTS.md`:
   ```
 - **Merge Order:** Merged after Audit Log and Parser.
 
-#### 8. `ui/6.1-dashboard`
+#### 9. `ui/6.1-dashboard`
 - **Purpose:** Multi-page Streamlit interface for exploring the catalog, testing settlements against proof fixtures, viewing glass-box audit logs, and submitting manager overrides.
 - **Base:** `main`
 - **Files It May Touch:** `app/Home.py`, `app/pages/*.py`, `tests/test_ui.py`.
@@ -129,7 +142,7 @@ Per `AGENTS.md`:
   ```
 - **Merge Order:** Merged after `agent/2.5-override-wiring`.
 
-#### 9. `docs/7.3-readme-disclosure`
+#### 10. `docs/7.3-readme-disclosure`
 - **Purpose:** Complete team README, hackathon brief proposal alignment, setup instructions, architecture diagram, and final `AI_DISCLOSURE.md`.
 - **Base:** `main`
 - **Files It May Touch:** `README.md`, `AI_DISCLOSURE.md`, `SUBMISSION.md`.
@@ -151,17 +164,19 @@ graph TD
 
     M3 --> P1[parser/3.1-rule-parser]
     M3 --> A1[agent/2.4-audit-log]
+    M3 --> L1[agent/2.6-sim-ledger]
     M3 --> U1[ui/6.1-dashboard - Skeleton]
 
     P1 --> M4[main with Parser]
     A1 --> M5[main with Audit Log]
+    L1 --> M6[main with Ledger]
 
-    M5 --> O1[agent/2.5-override-wiring]
-    O1 --> M6[main with Core Engine Wired]
+    M6 --> O1[agent/2.5-override-wiring]
+    O1 --> M7[main with Core Engine Wired]
 
-    M6 --> U2[ui/6.1-dashboard - Full Integration]
-    U2 --> M7[main Feature Complete]
+    M7 --> U2[ui/6.1-dashboard - Full Integration]
+    U2 --> M8[main Feature Complete]
 
-    M7 --> D1[docs/7.3-readme-disclosure]
-    D1 --> M8[main Submission Freeze]
+    M8 --> D1[docs/7.3-readme-disclosure]
+    D1 --> M9[main Submission Freeze]
 ```

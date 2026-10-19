@@ -1,20 +1,20 @@
 # Teammate Implementation Prompts
 
-This document provides four self-contained, copy-paste prompts that team members can drop directly into their AI coding assistants (e.g. Antigravity IDE, Claude, or Cursor). Each prompt is pre-configured with the project's strict rules, branch targets, test contracts, and scope boundaries.
+This document provides self-contained, copy-paste prompts that team members can drop directly into their AI coding assistants (e.g. Antigravity IDE, Claude, or Cursor). Each prompt is pre-configured with the project's strict rules, branch targets, test contracts, and scope boundaries.
 
 ---
 
 ## Prompt 1: Hash-Chained Audit Trail (`agent/2.4-audit-log`)
 
 ```markdown
-Read AGENTS.md and docs/BRANCHES.md first. Follow all repository rules strictly.
+Branch from main after scaffold/0.5 is merged, read docs/START_HERE.md and docs/DECISIONS.md, then fill in the stub and make its xfail tests pass (remove the xfail marker).
 
 ### Task Overview
 You are implementing the append-only, SHA-256 hash-chained audit log with idempotency/nonce verification on branch `agent/2.4-audit-log`.
 
 ### Branch & Scope Rules
 - **Branch from:** `main` (run: `git checkout main && git pull origin main && git checkout -b agent/2.4-audit-log`)
-- **Files you may touch:** `agent/audit.py`, `tests/test_audit.py`, `data/audit_log.json`
+- **Files you may touch:** `agent/audit_log.py`, `tests/test_audit.py`, `data/audit_log.json`
 - **Files forbidden to touch:** `metta/*`, `agent/bridge.py`, `data/artworks.json`, `app/*`
 - **Dependencies:** Consumes the canonical proof dictionary defined in `docs/PROOF_SHAPE.md`. Does NOT require MeTTa or LLM.
 
@@ -26,17 +26,17 @@ You are implementing the append-only, SHA-256 hash-chained audit log with idempo
 5. **Fail closed:** If an audit record fails hash validation or contains a duplicate nonce, raise `AuditError("DUPLICATE_NONCE")`.
 
 ### Implementation Requirements
-1. **Test-Driven Development:** Write `tests/test_audit.py` FIRST.
-   - Test 1: Genesis block initialization with fixed previous hash `"0" * 64`.
-   - Test 2: Appending a valid proof computes `SHA-256(prev_hash + timestamp + nonce + proof_payload)`.
-   - Test 3: Detecting tampered log entries (chain validation raises `AuditIntegrityError`).
-   - Test 4: Duplicate nonce check (`nonce` seen previously raises `AuditError("DUPLICATE_NONCE")`).
-   - Test 5: Exporting log as an inspectable JSON list for the UI.
-2. **Implementation (`agent/audit.py`):**
-   - Implement `AuditEntry` dataclass: `index`, `timestamp_iso`, `nonce`, `prev_hash`, `entry_hash`, `payload`.
-   - Implement `AuditLog` class with `record_proof(nonce: str, proof: dict) -> AuditEntry`.
-   - Implement `verify_integrity() -> bool`.
-   - Implement file persistence to `data/audit_log.json`.
+1. **Fill in the Stub (`agent/audit_log.py`):**
+   - Implement `append(proof: dict, nonce: str) -> dict`.
+   - Implement `verify_chain() -> bool`.
+   - Implement `seen_nonce(nonce: str) -> bool`.
+   - Appending computes `SHA-256(prev_hash + timestamp + nonce + proof_payload)`.
+   - Genesis block uses fixed previous hash `"0" * 64`.
+2. **Make Tests Pass (`tests/test_audit.py`):**
+   - Remove `@pytest.mark.xfail` from all tests in `tests/test_audit.py`.
+   - Test 1: Appending chains hashes correctly.
+   - Test 2: Tampered entry fails `verify_chain()`.
+   - Test 3: Duplicate nonce is detected.
 
 ### Verification & Completion
 - Run tests: `pytest tests/test_audit.py -v` (must be 100% passing).
@@ -53,7 +53,7 @@ You are implementing the append-only, SHA-256 hash-chained audit log with idempo
 ## Prompt 2: Rule-Based Natural Language Parser (`parser/3.1-rule-parser`)
 
 ```markdown
-Read AGENTS.md and docs/BRANCHES.md first. Follow all repository rules strictly.
+Branch from main after scaffold/0.5 is merged, read docs/START_HERE.md and docs/DECISIONS.md, then fill in the stub and make its xfail tests pass (remove the xfail marker).
 
 ### Task Overview
 You are implementing the deterministic rule-based natural language bid parser on branch `parser/3.1-rule-parser`. This module converts unstructured human inputs into validated integer minor units.
@@ -61,29 +61,30 @@ You are implementing the deterministic rule-based natural language bid parser on
 ### Branch & Scope Rules
 - **Branch from:** `main` (run: `git checkout main && git pull origin main && git checkout -b parser/3.1-rule-parser`)
 - **Files you may touch:** `agent/parser.py`, `tests/test_parser.py`
-- **Files forbidden to touch:** `metta/*`, `agent/bridge.py`, `agent/audit.py`, `data/*`, `app/*`
+- **Files forbidden to touch:** `metta/*`, `agent/bridge.py`, `agent/audit_log.py`, `data/*`, `app/*`
 - **Dependencies:** Pure Python standard library (regex, typing). No MeTTa or LLM required.
 
 ### Non-Negotiable Constraints
 1. **Zero floats:** Output must be an integer minor unit (cents). No `float(amount)` or decimal arithmetic.
-2. **Fail closed on ambiguity:** If a string is ambiguous (e.g. `"10 or 12k"`, `"around 500"`, `"free"`), reject with `ParserError("AMBIGUOUS_AMOUNT")`. Never guess!
-3. **Adversarial defense:** Prompt injections (e.g., `"ignore previous instructions"`, `"(shell rm)"`, quotes, semicolons) must be detected and rejected.
+2. **Fail closed on ambiguity:** If a string is ambiguous (e.g. `"10 or 12k"`, `"around 500"`, `"free"`), reject with `ValueError("AMBIGUOUS_AMOUNT")`. Never guess!
+3. **Adversarial defense:** Prompt injections (e.g., `"ignore previous instructions"`, `"(shell rm)"`, quotes, semicolons) must produce no change to parsed amounts.
 4. **No secrets & synthetic data only.**
 
 ### Implementation Requirements
-1. **Test-Driven Development:** Write `tests/test_parser.py` FIRST with at least 20 comprehensive test cases:
-   - Valid formats: `"$10,000"`, `"10000 USD"`, `"12k"`, `"12.5k"` (reject or handle via integer 1250000 cents without float arithmetic: `int(12) * 100000 + int(5) * 10000`), `"5M"`, `"500,000 cents"`.
-   - Currency extraction: Extracts `"USD"`, `"KES"`, default `"USD"`.
-   - Artwork ID extraction: Extracts uppercase IDs matching `^[A-Z0-9]+-[A-Z0-9_-]+$` (e.g. `"HFA-101"`).
-   - Ambiguity rejections: Reject `"10-12k"`, `"approx $500"`, `"best offer"`, `"-500"`, `"0"`.
-   - Adversarial prompt injection rejections: At least 5 injection strings attempting to set 0 royalty or execute MeTTa expressions.
-2. **Implementation (`agent/parser.py`):**
-   - `@dataclass(frozen=True) class ParsedBid: artwork_id: str | None, amount_minor: int, currency: str, raw_text: str`.
-   - Implement `parse_bid_intent(text: str) -> ParsedBid`.
-   - Clean regex pattern matching without binary floating-point conversion.
+1. **Fill in the Stub (`agent/parser.py`):**
+   - Implement `parse_amount_cents(text: str) -> int`.
+   - Implement `parse_request(text: str) -> dict`.
+   - Handle `"12k"` -> `1200000`, `"$12,500"` -> `1250000`, `"10000 USD"` -> `1000000`.
+   - Extract artwork IDs matching `^[A-Z0-9]+-[A-Z0-9_-]+$` (e.g. `"HFA-101"`).
+2. **Make Tests Pass (`tests/test_parser.py`):**
+   - Remove `@pytest.mark.xfail` from all tests in `tests/test_parser.py`.
+   - Test 1: `parse_amount_cents("12k") == 1200000`.
+   - Test 2: `parse_amount_cents("$12,500") == 1250000`.
+   - Test 3: Ambiguous input is rejected.
+   - Test 4: Three prompt injection strings produce no change to the amounts.
 
 ### Verification & Completion
-- Run tests: `pytest tests/test_parser.py -v` (all 20+ tests passing).
+- Run tests: `pytest tests/test_parser.py -v` (all tests passing).
 - Run full suite: `pytest` to confirm zero regressions.
 - Add an entry to `PROGRESS.md`.
 - Commit format: `feat(parser): rule-based bid parser with adversarial prompt rejection [3.1-rule-parser]`
@@ -94,10 +95,56 @@ You are implementing the deterministic rule-based natural language bid parser on
 
 ---
 
-## Prompt 3: Streamlit Compliance Dashboard (`ui/6.1-dashboard`)
+## Prompt 3: Simulated Double-Entry Ledger (`agent/2.6-sim-ledger`)
 
 ```markdown
-Read AGENTS.md and docs/BRANCHES.md first. Follow all repository rules strictly.
+Branch from main after scaffold/0.5 is merged, read docs/START_HERE.md and docs/DECISIONS.md, then fill in the stub and make its xfail tests pass (remove the xfail marker).
+
+### Task Overview
+You are implementing the simulated double-entry bookkeeping ledger in integer cents on branch `agent/2.6-sim-ledger`.
+
+### Branch & Scope Rules
+- **Branch from:** `main` (run: `git checkout main && git pull origin main && git checkout -b agent/2.6-sim-ledger`)
+- **Files you may touch:** `agent/ledger.py`, `tests/test_ledger.py`
+- **Files forbidden to touch:** `metta/*`, `agent/bridge.py`, `data/*`, `app/*`
+- **Dependencies:** Consumes proof fixtures from `tests/fixtures/proofs/` matching `docs/PROOF_SHAPE.md`.
+
+### Non-Negotiable Invariants
+1. **The ledger COPIES amounts from the proof and only checks that entries sum to zero.** It performs NO settlement calculation and NO money maths.
+2. **Strict integer minor units (cents):** Zero floats, zero decimals.
+3. **Double-entry convention:** Debits (buyer receivable) + Credits (platform fee, artist royalty, community fund + dust, co-owners) == 0.
+4. **Rejected proofs post nothing.**
+5. **Replayed nonces do not change balances.**
+
+### Implementation Requirements
+1. **Fill in the Stub (`agent/ledger.py`):**
+   - Implement `post(proof: dict, nonce: str | None = None) -> dict`.
+   - Implement `balances() -> dict[str, int]`.
+   - Implement `verify() -> bool`.
+2. **Make Tests Pass (`tests/test_ledger.py`):**
+   - Remove `@pytest.mark.xfail` from all tests in `tests/test_ledger.py`.
+   - Test 1: SC-01 balances match the fixture.
+   - Test 2: SC-02 rejected proof posts nothing.
+   - Test 3: SC-06 dust sweeps to community fund.
+   - Test 4: Replayed nonce does not change balances.
+   - Test 5: Tampered entry is detected.
+
+### Verification & Completion
+- Run tests: `pytest tests/test_ledger.py -v` (all 5 tests passing).
+- Run full suite: `pytest` to confirm zero regressions.
+- Add an entry to `PROGRESS.md`.
+- Commit format: `feat(ledger): simulated double-entry ledger in integer cents [2.6-sim-ledger]`
+  Include: `Assisted-by: <tool and model>`
+- Push to origin: `git push -u origin agent/2.6-sim-ledger`
+- Open a Pull Request into `main`. Do NOT merge it.
+```
+
+---
+
+## Prompt 4: Streamlit Compliance Dashboard (`ui/6.1-dashboard`)
+
+```markdown
+Branch from main after scaffold/0.5 is merged, read docs/START_HERE.md and docs/DECISIONS.md, then fill in the stub and make its xfail tests pass (remove the xfail marker).
 
 ### Task Overview
 You are building the multi-page Streamlit compliance and settlement dashboard on branch `ui/6.1-dashboard`. It provides an intuitive interface for collectors, gallery directors, and curators to inspect proofs and audit traces.
@@ -138,10 +185,10 @@ You are building the multi-page Streamlit compliance and settlement dashboard on
 
 ---
 
-## Prompt 4: Documentation & Final AI Disclosure (`docs/7.3-readme-disclosure`)
+## Prompt 5: Documentation & Final AI Disclosure (`docs/7.3-readme-disclosure`)
 
 ```markdown
-Read AGENTS.md and docs/BRANCHES.md first. Follow all repository rules strictly.
+Branch from main after scaffold/0.5 is merged, read docs/START_HERE.md and docs/DECISIONS.md, then fill in the stub and make its xfail tests pass (remove the xfail marker).
 
 ### Task Overview
 You are finalizing the project documentation, installation instructions, architecture breakdown, and full AI disclosure log on branch `docs/7.3-readme-disclosure`.
@@ -157,20 +204,10 @@ You are finalizing the project documentation, installation instructions, archite
    - **Partner Brief Proposal Notice:** State clearly: *"This proposal is based on the Harlem Fine Arts Show (HFAS) brief for #BuyBlackArt."*
    - **Synthetic Data Compliance:** Explicit statement that all catalog records, wallet hashes, and transactions are synthetic placeholders marked `"synthetic": true`.
    - **Architecture Diagram:** Hybrid neural-symbolic cognitive architecture diagram (Perception -> Omega/Bridge -> Hyperon AtomSpace -> Audit Log -> Manager Console).
-   - **Quickstart & Setup Instructions:** Verified clean clone commands on PowerShell:
-     ```powershell
-     .\.venv\Scripts\Activate.ps1
-     pip install -r requirements.txt
-     pytest
-     streamlit run app/Home.py
-     ```
+   - **Quickstart & Setup Instructions:** Verified clean clone commands on PowerShell and Bash.
    - **Scenario Walkthroughs:** Overview of SC-01 through SC-09 showing how invariant proofs defend artist royalties and community funds.
 2. **`AI_DISCLOSURE.md`:**
-   - Comprehensive log detailing every AI tool used across the project lifecycle:
-     - Antigravity AI Coding Assistant (planning, test scaffolding, MeTTa rules, bridge implementation).
-     - Gemini 2.5 Flash (via OpenAI-compatible API for the live Omega cognitive loop integration spike).
-     - Claude (if used for architecture review or document drafting).
-     - State explicitly that Copilot was not used (or log it only if a teammate used it).
+   - Comprehensive log detailing every AI tool used across the project lifecycle.
 3. **`SUBMISSION.md`:**
    - Report each submission checklist item as passed, failed, or not applicable.
 
