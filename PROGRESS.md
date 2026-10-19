@@ -13,11 +13,11 @@
 | Component | Status | Verification Level | Notes |
 | :--- | :--- | :--- | :--- |
 | **Hyperon / MeTTa Runtime** | **VERIFIED WORKING** | Level B (Executed) | Pinned `hyperon==0.2.10`, real symbolic engine executed without mocks. |
-| **MeTTa Python Bridge** | **VERIFIED WORKING** | Level B (Executed) | Fail-closed `agent/bridge.py`, strict input sanitization, 17/17 tests passing. |
+| **MeTTa Python Bridge** | **HARDENED & VERIFIED** | Level B (Executed) | Fail-closed `agent/bridge.py`, strict input validation, Atom API fact generation, 45/45 tests passing. |
 | **API Key & Security** | **SECURED** | Level B (Executed) | Key isolated in gitignored `.env`; template scrubbed in `.env.example`. |
 | **Omega Framework** | **VERIFIED (LIVE GEMINI)** | Level B (Executed) | Docker image built, OpenAIAPI-to-Gemini connection verified, native tool-calling & MeTTa reduction confirmed live. |
-| **Financial & Domain Rules** | **TASK 1 VERIFIED** | Level B (Executed) | Synthetic registry `data/artworks.json`, independent test oracle, SC-01 to SC-09 scenarios, 31/31 tests passing. |
-| **Hyperon MeTTa Settlement** | **TASK 2 VERIFIED** | Level B (Executed) | Fiduciary settlement & rejection rules in `metta/royalties.metta`, native Atom API bridge, 42/42 tests passing. |
+| **Financial & Domain Rules** | **PR #2 MERGED TO MAIN** | Level B (Executed) | Synthetic registry `data/artworks.json`, independent test oracle, SC-01 to SC-09 scenarios. |
+| **Hyperon MeTTa Settlement** | **PR #3 MERGED TO MAIN** | Level B (Executed) | Fiduciary settlement & rejection rules in `metta/royalties.metta`, native Atom API bridge. |
 | **Audit Trail & Override** | **PENDING** | - | Append-only symbolic audit log & live re-evaluation with manager override. |
 | **Compliance UI** | **PENDING** | - | Streamlit dashboard for application review, "Why?" inspection, and overrides. |
 
@@ -26,34 +26,18 @@
 ## Git Branch Topology, Commits & Merges
 
 ### Active & Historical Branches
-- **`main`** (Base branch): Stable mainline tracking official deliverables. Head at merge commit `d1ace45`.
+- **`main`** (Base branch): Stable mainline tracking official deliverables. Head at `b3dd353` (PR #3).
 - **`spike/metta-omega-integration`** (Historical spike branch): Initial foundation branch where Hyperon MeTTa bridge (`40d3d73`) and Omega research were performed; merged into `origin/main` as PR #1 (`bba2383`).
-- **`data/0.3-synthetic-registry`** (Task 1 branch): Branched from clean `main`. Contains `data/artworks.json`, `tests/oracle.py`, scenario definitions `SC-01` to `SC-09`, and `.github/workflows/ci.yml` (commit `f289523`).
-- **`metta/1.3-settlement-rule`** (Task 2 active branch): Branched from `data/0.3-synthetic-registry`. Contains pure symbolic settlement rules in `metta/royalties.metta`, direct assertion tests `metta/tests/test_royalties.metta`, and native Hyperon Atom API bridge in `agent/bridge.py` (commit `8abd9f7`).
-
-### Complete Commit History & Merges Graph
-```
-* 8abd9f7 (HEAD -> metta/1.3-settlement-rule) feat(metta): fiduciary settlement rules, test suite, and native atom bridge [1.3-settlement-rule]
-* f289523 (data/0.3-synthetic-registry) feat(data): synthetic artworks registry, test oracle, and scenario definitions [0.3-synthetic-registry]
-*   d1ace45 (main) merge: resolve documentation conflicts with origin/main
-|\  
-| * bba2383 (origin/main) Spike/metta omega integration (#1)
-* | 8844461 docs: restore guardrails, add handoff and CI, log spike progress
-| | * 40d3d73 (spike/metta-omega-integration, origin/spike/metta-omega-integration) feat: verified Hyperon MeTTa adapter, tests, and Omega investigation notes
-| |/  
-|/|   
-* | 3f7f24c docs: markdown skills for handling omega and metta
-|/  
-* dfe9ece docs: created CONTEXT for agents
-* c38f045 chore: initial scaffold with PowerShell environment, VS Code config, and team git workflow
-* f27b407 initial commit
-* fa2515b Initial commit
-* 5ef363a Agent host session 8be1f554-8021-41ca-98c3-daa2b84779c6 - baseline checkpoint
-```
+- **`data/0.3-synthetic-registry`** (Task 1 branch): Branched from clean `main`. Contains `data/artworks.json`, `tests/oracle.py`, scenario definitions `SC-01` to `SC-09`, and `.github/workflows/ci.yml`. Merged into `origin/main` as PR #2 (`9d26b7f`).
+- **`metta/1.3-settlement-rule`** (Task 2 branch): Branched from `data/0.3-synthetic-registry`. Contains pure symbolic settlement rules in `metta/royalties.metta`, direct assertion tests `metta/tests/test_royalties.metta`, and native Hyperon Atom API bridge in `agent/bridge.py`. Merged into `origin/main` as PR #3 (`b3dd353`).
+- **`docs/7.0-branch-guide`** (Branch guide & fixtures): Contract definition for proof atom conservation, fixture generator with producing layer labels, team prompts.
+- **`metta/1.4-bridge-hardening`** (Task 1.4 active branch): Branched from `main` @ `b3dd353`. Hardens bridge argument validation (strictly rejects parens, quotes, whitespace, empty strings, nested expressions) and constructs fact atoms via native Hyperon Atom API.
 
 ### Merges Done
 1. **PR #1 Merge (`bba2383`)**: Merged `spike/metta-omega-integration` into `origin/main`.
-2. **Main Conflict Resolution Merge (`d1ace45`)**: Resolved documentation merge divergence between remote `origin/main` (`bba2383`) and local verified docs (`8844461`) using Option A, preserving all verified runtime documentation and guardrails.
+2. **Main Conflict Resolution Merge (`d1ace45`)**: Resolved documentation merge divergence between remote `origin/main` (`bba2383`) and local verified docs (`8844461`) using Option A.
+3. **PR #2 Merge (`9d26b7f`)**: Merged `data/0.3-synthetic-registry` into `main`.
+4. **PR #3 Merge (`b3dd353`)**: Merged `metta/1.3-settlement-rule` into `main`.
 
 ---
 
@@ -240,6 +224,21 @@ The workflow file is committed at `.github/workflows/ci.yml`.
   - 20-iteration seeded pseudo-random fuzz tests matching MeTTa proof against test oracle.
   - **Full Test Suite Status: 42 passed in 7.79s.**
 
+### 7. MeTTa Bridge Hardening & Native Atom API (Task 1.4: VERIFIED)
+- **Strict Input Validation (`agent/bridge.py`):**
+  - Tightened `_is_valid_arg` to enforce fail-closed rejection:
+    - Rejects parentheses (`(`, `)`), quotes (`"`, `'`), whitespace, and empty strings.
+    - Rejects nested expressions passed as strings or data structures.
+    - Valid IDs such as `HFA-101` and `TEST-DUST` pass.
+- **Native Atom API Fact Construction:**
+  - Replaced string formatting of facts with direct construction via `hyperon.atoms.E`, `hyperon.atoms.S`, and `hyperon.atoms.ValueAtom`.
+  - Cap table facts are constructed directly as recursive `(cons-share ...)` atom expressions rather than string serialization.
+  - Bridge loads facts directly into `MeTTa().space().add_atom(...)`.
+- **Bridge Hardening Test Suite (`tests/test_bridge_hardening.py`):**
+  - Confirmed rejection of `"(bad)"`, `"a b"`, `""`, `"HFA-101)"`, nested expressions, and quoted strings with `ReasoningStatus.INVALID_INPUT`.
+  - Confirmed validation acceptance of `"HFA-101"` and `"TEST-DUST"`.
+  - Full test suite: 45 passed in 7.49s.
+
 ---
 
 ## Next Steps & Roadmap
@@ -249,5 +248,6 @@ The workflow file is committed at `.github/workflows/ci.yml`.
    - Implement live re-evaluation upon manager override with non-destructive state retention and 15-character rationale enforcement.
 2. **Interactive Multi-Page Streamlit App (`app/`):**
    - Multi-page UI (Catalog, Settlement, Manager Console, Treasury) showcasing real-time verdict inspection, audit trail viewer, and manager sign-off workflows.
+
 
 

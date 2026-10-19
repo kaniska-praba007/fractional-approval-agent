@@ -89,7 +89,23 @@ class SettlementRejection:
 @dataclass(frozen=True)
 class Fact:
     relation: str
-    args: tuple[object, ...]
+    args: tuple[object, ...] = ()
+    atom: object = None
+
+    def to_atom(self):
+        """Construct Hyperon Atom representation of this fact using Hyperon Atom API."""
+        if self.atom is not None:
+            return self.atom
+        from hyperon.atoms import E, S, ValueAtom
+        atom_args = []
+        for a in self.args:
+            if isinstance(a, int):
+                atom_args.append(ValueAtom(a))
+            elif isinstance(a, str):
+                atom_args.append(S(a))
+            else:
+                atom_args.append(a)
+        return E(S(self.relation), *atom_args)
 
 
 @dataclass(frozen=True)
@@ -124,18 +140,19 @@ class ReasoningResult:
 
 def _is_valid_arg(value: object) -> bool:
     """Validate that an argument is safe: string token matching _IDENT_RE or safe int.
-    Strictly rejects floats, booleans, negative integers, or unknown types."""
+    Strictly rejects floats, booleans, negative integers, parentheses, quotes, whitespace,
+    empty strings, nested expressions, or unknown types."""
     if isinstance(value, (float, bool)):
         return False
     if isinstance(value, int):
         return value >= 0
     if isinstance(value, str):
-        # Allow safe nested s-expression lists (e.g. cap-table expressions)
-        if value.startswith("(") and value.endswith(")"):
-            # Ensure no injection characters such as unbalanced parens or semicolons
-            if ";" in value or "!" in value or "?" in value:
-                return False
-            return True
+        if not value:
+            return False
+        if any(c in value for c in "()\"'"):
+            return False
+        if any(c.isspace() for c in value):
+            return False
         return bool(_IDENT_RE.match(value))
     return False
 
@@ -153,6 +170,10 @@ def _validate(req: ReasoningRequest) -> str | None:
     for f in req.facts:
         if not isinstance(f, Fact) or f.relation not in req.allowed_relations:
             return "fact relation not in allow-list"
+        if f.atom is not None:
+            if not all(_is_valid_arg(a) for a in f.args):
+                return "invalid fact argument"
+            continue
         if not f.args or not all(_is_valid_arg(a) for a in f.args):
             return "invalid fact argument"
     return None
@@ -160,7 +181,16 @@ def _validate(req: ReasoningRequest) -> str | None:
 
 def _build_program(req: ReasoningRequest) -> str:
     rules = req.rule_file.read_text(encoding="utf-8")
-    facts = "\n".join(f"({f.relation} {' '.join(str(a) for a in f.args)})" for f in req.facts)
+    fact_strs = []
+    for f in req.facts:
+        if f.atom is not None:
+            fact_strs.append(str(f.atom))
+        else:
+            try:
+                fact_strs.append(str(f.to_atom()))
+            except Exception:
+                fact_strs.append(f"({f.relation} {' '.join(str(a) for a in f.args)})")
+    facts = "\n".join(fact_strs)
     query = f"!({req.query_function} {' '.join(str(a) for a in req.query_args)} $result)"
     return f"{rules}\n{facts}\n{query}\n"
 
@@ -173,9 +203,24 @@ def _engine_version() -> str | None:
         return None
 
 
-def _run_hyperon(program: str) -> list[list[object]]:
+def _run_hyperon(req_or_program: ReasoningRequest | str) -> list[list[object]]:
     from hyperon import MeTTa
-    return MeTTa().run(program)
+    metta = MeTTa()
+    if isinstance(req_or_program, str):
+        return metta.run(req_or_program)
+
+    # 1. Load rules
+    rules = req_or_program.rule_file.read_text(encoding="utf-8")
+    metta.run(rules)
+
+    # 2. Add fact atoms to space directly via Hyperon Atom API
+    space = metta.space()
+    for f in req_or_program.facts:
+        space.add_atom(f.to_atom())
+
+    # 3. Query
+    query = f"!({req_or_program.query_function} {' '.join(str(a) for a in req_or_program.query_args)} $result)"
+    return metta.run(query)
 
 
 def load_artwork_facts(artwork: dict) -> list[Fact]:
@@ -190,17 +235,22 @@ def load_artwork_facts(artwork: dict) -> list[Fact]:
         Fact("artwork-status", (art_id, artwork.get("status", "LIVING"))),
     ]
 
-    # Convert cap table to recursive s-expression:
+    # Convert cap table to recursive atom expression using Hyperon Atom API:
     # (cons-share (share-entry alice 6000 0xalice) (cons-share (share-entry bob 4000 0xbob) ()))
-    cap_entries = []
-    for entry in artwork.get("cap_table", []):
-        cap_entries.append(f"(share-entry {entry['owner']} {entry['bps']} {entry['wallet']})")
+    from hyperon.atoms import E, S, ValueAtom
 
-    cap_sexpr = "()"
-    for entry_str in reversed(cap_entries):
-        cap_sexpr = f"(cons-share {entry_str} {cap_sexpr})"
+    cap_atom = E()
+    for entry in reversed(artwork.get("cap_table", [])):
+        owner = entry["owner"]
+        bps = entry["bps"]
+        wallet = entry["wallet"]
+        if not _is_valid_arg(owner) or not _is_valid_arg(bps) or not _is_valid_arg(wallet):
+            raise ValueError(f"Invalid cap table entry: {entry}")
+        entry_atom = E(S("share-entry"), S(owner), ValueAtom(bps), S(wallet))
+        cap_atom = E(S("cons-share"), entry_atom, cap_atom)
 
-    facts.append(Fact("artwork-cap", (art_id, cap_sexpr)))
+    cap_fact_atom = E(S("artwork-cap"), S(art_id), cap_atom)
+    facts.append(Fact("artwork-cap", (art_id,), atom=cap_fact_atom))
     return facts
 
 
@@ -238,7 +288,8 @@ def run_reasoning(
     common = dict(engine_version=version, program=program, fact_ids=fact_ids)
 
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-    future = pool.submit(_runner, program)
+    runner_arg = req if _runner is _run_hyperon else program
+    future = pool.submit(_runner, runner_arg)
     try:
         raw = future.result(timeout=timeout_s)
     except concurrent.futures.TimeoutError:
