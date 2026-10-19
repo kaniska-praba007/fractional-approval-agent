@@ -10,7 +10,7 @@
   },
   "expected": {
     "status": "REJECTED",
-    "rejection_code": "FAILED_CLOSED",
+    "rejection_code": "ENGINE_UNAVAILABLE",
     "rejection_reason": "No valid MeTTa proof returned for unknown or invalid artwork entity",
     "gross_minor": 1000000,
     "payouts_generated": false

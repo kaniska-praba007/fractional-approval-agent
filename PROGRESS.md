@@ -13,11 +13,12 @@
 | Component | Status | Verification Level | Notes |
 | :--- | :--- | :--- | :--- |
 | **Hyperon / MeTTa Runtime** | **VERIFIED WORKING** | Level B (Executed) | Pinned `hyperon==0.2.10`, real symbolic engine executed without mocks. |
-| **MeTTa Python Bridge** | **HARDENED & VERIFIED** | Level B (Executed) | Fail-closed `agent/bridge.py`, strict input validation, Atom API fact generation, 45/45 tests passing. |
+| **MeTTa Python Bridge** | **VERIFIED WORKING** | Level B (Executed) | Fail-closed `agent/bridge.py`, strict input sanitization, 17/17 tests passing. |
 | **API Key & Security** | **SECURED** | Level B (Executed) | Key isolated in gitignored `.env`; template scrubbed in `.env.example`. |
 | **Omega Framework** | **VERIFIED (LIVE GEMINI)** | Level B (Executed) | Docker image built, OpenAIAPI-to-Gemini connection verified, native tool-calling & MeTTa reduction confirmed live. |
-| **Financial & Domain Rules** | **PR #2 MERGED TO MAIN** | Level B (Executed) | Synthetic registry `data/artworks.json`, independent test oracle, SC-01 to SC-09 scenarios. |
-| **Hyperon MeTTa Settlement** | **PR #3 MERGED TO MAIN** | Level B (Executed) | Fiduciary settlement & rejection rules in `metta/royalties.metta`, native Atom API bridge. |
+| **Financial & Domain Rules** | **TASK 1 VERIFIED** | Level B (Executed) | Synthetic registry `data/artworks.json`, independent test oracle, SC-01 to SC-09 scenarios, 31/31 tests passing. |
+| **Hyperon MeTTa Settlement** | **TASK 2 VERIFIED** | Level B (Executed) | Fiduciary settlement & rejection rules in `metta/royalties.metta`, native Atom API bridge, 42/42 tests passing. |
+| **Branch Architecture & Fixtures** | **STAGE 3 & 4 VERIFIED** | Level B (Executed) | Master branch guide, shared proof contract, real bridge proof fixtures, teammate prompts. |
 | **Audit Trail & Override** | **PENDING** | - | Append-only symbolic audit log & live re-evaluation with manager override. |
 | **Compliance UI** | **PENDING** | - | Streamlit dashboard for application review, "Why?" inspection, and overrides. |
 
@@ -26,18 +27,44 @@
 ## Git Branch Topology, Commits & Merges
 
 ### Active & Historical Branches
-- **`main`** (Base branch): Stable mainline tracking official deliverables. Head at `b3dd353` (PR #3).
-- **`spike/metta-omega-integration`** (Historical spike branch): Initial foundation branch where Hyperon MeTTa bridge (`40d3d73`) and Omega research were performed; merged into `origin/main` as PR #1 (`bba2383`).
-- **`data/0.3-synthetic-registry`** (Task 1 branch): Branched from clean `main`. Contains `data/artworks.json`, `tests/oracle.py`, scenario definitions `SC-01` to `SC-09`, and `.github/workflows/ci.yml`. Merged into `origin/main` as PR #2 (`9d26b7f`).
-- **`metta/1.3-settlement-rule`** (Task 2 branch): Branched from `data/0.3-synthetic-registry`. Contains pure symbolic settlement rules in `metta/royalties.metta`, direct assertion tests `metta/tests/test_royalties.metta`, and native Hyperon Atom API bridge in `agent/bridge.py`. Merged into `origin/main` as PR #3 (`b3dd353`).
-- **`docs/7.0-branch-guide`** (Branch guide & fixtures): Contract definition for proof atom conservation, fixture generator with producing layer labels, team prompts.
-- **`metta/1.4-bridge-hardening`** (Task 1.4 active branch): Branched from `main` @ `b3dd353`. Hardens bridge argument validation (strictly rejects parens, quotes, whitespace, empty strings, nested expressions) and constructs fact atoms via native Hyperon Atom API.
+- **`main`** (Base branch): Stable mainline tracking official deliverables. Head at `b3dd353` after merging PR #2 and PR #3.
+- **`docs/7.0-branch-guide`** (Active branch): Contains `docs/BRANCHES.md`, `docs/PROOF_SHAPE.md`, `docs/TEAM_PROMPTS.md`, and canonical proof fixtures `tests/fixtures/proofs/*.json` (commit `a4b3906`).
+- **`metta/1.3-settlement-rule`** (Merged): Fiduciary settlement rules, direct Hyperon `assertEqual` tests, native Atom API bridge; merged into `main` via PR #3 (`b3dd353`).
+- **`data/0.3-synthetic-registry`** (Merged): Canonical synthetic registry `data/artworks.json`, test oracle, scenario definitions `SC-01` to `SC-09`, and `.github/workflows/ci.yml`; merged into `main` via PR #2 (`9d26b7f`).
+- **`spike/metta-omega-integration`** (Merged): Foundation branch where Hyperon MeTTa bridge and live Gemini Omega investigation were performed; merged into `origin/main` as PR #1 (`bba2383`).
+
+### Complete Commit History & Merges Graph
+```
+* a4b3906 (HEAD -> docs/7.0-branch-guide, origin/docs/7.0-branch-guide) docs(guide): branch lifecycle guide, proof shape contract, fixtures, and teammate prompts [7.0-branch-guide]
+* b3dd353 (origin/main, main) Implement fiduciary settlement rules and update documentation (#3)
+*   9d26b7f Merge pull request #2 from kaniska-praba007/data/0.3-synthetic-registry
+|\  
+| | * 41d6d84 docs: update PROGRESS.md with git topology and mandate sprint updates in AGENTS.md [1.3-settlement-rule]
+| | * 8abd9f7 feat(metta): fiduciary settlement rules, test suite, and native atom bridge [1.3-settlement-rule]
+| |/  
+| * f289523 feat(data): synthetic artworks registry, test oracle, and scenario definitions [0.3-synthetic-registry]
+|/  
+*   d1ace45 merge: resolve documentation conflicts with origin/main
+|\  
+| * bba2383 Spike/metta omega integration (#1)
+* | 8844461 docs: restore guardrails, add handoff and CI, log spike progress
+| | * 40d3d73 feat: verified Hyperon MeTTa adapter, tests, and Omega investigation notes
+| |/  
+|/|   
+* | 3f7f24c docs: markdown skills for handling omega and metta
+|/  
+* dfe9ece docs: created CONTEXT for agents
+* c38f045 chore: initial scaffold with PowerShell environment, VS Code config, and team git workflow
+* f27b407 initial commit
+* fa2515b Initial commit
+* 5ef363a Agent host session 8be1f554-8021-41ca-98c3-daa2b84779c6 - baseline checkpoint
+```
 
 ### Merges Done
 1. **PR #1 Merge (`bba2383`)**: Merged `spike/metta-omega-integration` into `origin/main`.
-2. **Main Conflict Resolution Merge (`d1ace45`)**: Resolved documentation merge divergence between remote `origin/main` (`bba2383`) and local verified docs (`8844461`) using Option A.
-3. **PR #2 Merge (`9d26b7f`)**: Merged `data/0.3-synthetic-registry` into `main`.
-4. **PR #3 Merge (`b3dd353`)**: Merged `metta/1.3-settlement-rule` into `main`.
+2. **Main Conflict Resolution Merge (`d1ace45`)**: Resolved documentation divergence between remote `origin/main` (`bba2383`) and local verified docs (`8844461`) using Option A, preserving all verified runtime documentation and guardrails.
+3. **PR #2 Merge (`9d26b7f`)**: Merged `data/0.3-synthetic-registry` into `main` (synthetic catalog, test oracle, scenarios SC-01 to SC-09, CI workflow).
+4. **PR #3 Merge (`b3dd353`)**: Merged `metta/1.3-settlement-rule` into `main` (fiduciary settlement rules, direct assertion tests, native Atom API bridge).
 
 ---
 
@@ -224,30 +251,37 @@ The workflow file is committed at `.github/workflows/ci.yml`.
   - 20-iteration seeded pseudo-random fuzz tests matching MeTTa proof against test oracle.
   - **Full Test Suite Status: 42 passed in 7.79s.**
 
-### 7. MeTTa Bridge Hardening & Native Atom API (Task 1.4: VERIFIED)
-- **Strict Input Validation (`agent/bridge.py`):**
-  - Tightened `_is_valid_arg` to enforce fail-closed rejection:
-    - Rejects parentheses (`(`, `)`), quotes (`"`, `'`), whitespace, and empty strings.
-    - Rejects nested expressions passed as strings or data structures.
-    - Valid IDs such as `HFA-101` and `TEST-DUST` pass.
-- **Native Atom API Fact Construction:**
-  - Replaced string formatting of facts with direct construction via `hyperon.atoms.E`, `hyperon.atoms.S`, and `hyperon.atoms.ValueAtom`.
-  - Cap table facts are constructed directly as recursive `(cons-share ...)` atom expressions rather than string serialization.
-  - Bridge loads facts directly into `MeTTa().space().add_atom(...)`.
-- **Bridge Hardening Test Suite (`tests/test_bridge_hardening.py`):**
-  - Confirmed rejection of `"(bad)"`, `"a b"`, `""`, `"HFA-101)"`, nested expressions, and quoted strings with `ReasoningStatus.INVALID_INPUT`.
-  - Confirmed validation acceptance of `"HFA-101"` and `"TEST-DUST"`.
-  - Full test suite: 45 passed in 7.49s.
+---
+
+### 7. Branch Lifecycle Guide, Shared Proof Contract & Teammate Prompts (Stage 3 & 4: VERIFIED)
+- **Branch Lifecycle Documentation (`docs/BRANCHES.md`):**
+  - Formulates strict isolation boundaries, allowed/forbidden files, testing procedures, and merge sequence for merged, active, and planned branches (`metta/1.4-bridge-hardening`, `agent/2.4-audit-log`, `parser/3.1-rule-parser`, `agent/2.5-override-wiring`, `ui/6.1-dashboard`, `docs/7.3-readme-disclosure`).
+  - Merge order defined: `metta/1.4-bridge-hardening` merges first, followed by `docs/7.0-branch-guide`.
+- **Canonical Proof Contract & Unified Reason Codes (`docs/PROOF_SHAPE.md`):**
+  - Specifies shared JSON schema with integer minor units (cents), proof fields (`gross`, `fee`, `artist`, `community`, `dust`, `pool`, `coowners`), conservation equation assertion, and unified reason code reference:
+    `BELOW_RESERVE`, `OVERRIDE_BELOW_FLOOR`, `OVERRIDE_NOT_ALLOWED`, `ARTWORK_CONTESTED`, `UNSUPPORTED_CURRENCY`, `DUPLICATE_NONCE`, `ENGINE_UNAVAILABLE`, `LLM_MALFORMED_OUTPUT`, `INVALID_AMOUNT`, `AMOUNT_ABOVE_CAP`, `CAP_TABLE_INVALID`, `ARTWORK_FLAGGED`.
+  - Harmonized `ENGINE_UNAVAILABLE` across `PROOF_SHAPE.md`, `tests/oracle.py`, scenario definitions, and fixtures (replacing legacy `FAILED_CLOSED`).
+- **Real Bridge Proof Fixtures (`tests/fixtures/proofs/*.json`):**
+  - Generated canonical fixture files for all 9 scenarios (`SC-01` through `SC-09`) directly by executing the real `agent/bridge.py` and `hyperon` runtime, labeled with producing layer annotations (`bridge/MeTTa`, `audit_log`, `bridge_fail_closed`, `parser`).
+- **Teammate Implementation Prompts (`docs/TEAM_PROMPTS.md`):**
+  - 4 copy-paste prompts configured with strict rules, branch targets, test contracts, and scope boundaries for:
+    1. `agent/2.4-audit-log`: append-only, SHA-256 hash-chained log with idempotency.
+    2. `parser/3.1-rule-parser`: rule-based bid parser with adversarial injection defense.
+    3. `ui/6.1-dashboard`: Streamlit multi-page interface reading proof fixtures.
+    4. `docs/7.3-readme-disclosure`: final README, proposal notice, architecture map, and AI disclosure.
 
 ---
 
 ## Next Steps & Roadmap
 
-1. **Manager Override & Glass-Box Audit Trail (`agent/audit.py`, `agent/override.py`):**
-   - Construct append-only audit trail logging input facts, evaluated rules, timestamps, and symbolic conclusions.
-   - Implement live re-evaluation upon manager override with non-destructive state retention and 15-character rationale enforcement.
-2. **Interactive Multi-Page Streamlit App (`app/`):**
-   - Multi-page UI (Catalog, Settlement, Manager Console, Treasury) showcasing real-time verdict inspection, audit trail viewer, and manager sign-off workflows.
+1. **Parallel Teammate Execution (via `docs/TEAM_PROMPTS.md`):**
+   - Teammate 1: Implement `agent/2.4-audit-log` (hash-chained audit trail).
+   - Teammate 2: Implement `parser/3.1-rule-parser` (rule-based NLP parser).
+   - Teammate 3: Implement `ui/6.1-dashboard` (Streamlit multi-page interface).
+2. **Lead Override Wiring (`agent/2.5-override-wiring`):**
+   - Connect bridge output directly to the proof contract, integrate manager override re-evaluation, and enforce 15-character rationale requirement.
+3. **Submission Finalization (`docs/7.3-readme-disclosure`):**
+   - Synthesize final README, architecture diagram, submission checklist, and record 3-minute video before deadline lock (Tue 20 Oct 2026, 8:30 PM IST).
 
 
 

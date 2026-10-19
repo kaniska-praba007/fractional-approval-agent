@@ -37,6 +37,22 @@ class PayoutProof:
 
 
 class OracleRejection(Exception):
+    """Raised when the independent test oracle detects a covenant or validation violation.
+    
+    Canonical reason codes (docs/PROOF_SHAPE.md):
+    - BELOW_RESERVE: Gross resale price is below registered reserve floor.
+    - OVERRIDE_BELOW_FLOOR: Manager override attempted to breach artist royalty floor.
+    - OVERRIDE_NOT_ALLOWED: Manager override attempted to decrease community fund cut.
+    - ARTWORK_CONTESTED: Artwork status is marked CONTESTED.
+    - UNSUPPORTED_CURRENCY: Currency does not match registered reserve currency.
+    - DUPLICATE_NONCE: Replay attack detected by intake gateway / audit log.
+    - ENGINE_UNAVAILABLE: Reasoning engine unmapped entity, timeout, or runtime failure.
+    - LLM_MALFORMED_OUTPUT: Natural language bid could not be deterministically parsed.
+    - INVALID_AMOUNT: Gross amount non-integer, negative, zero, float, or boolean.
+    - AMOUNT_ABOVE_CAP: Proposed gross exceeds maximum supported transaction cap.
+    - CAP_TABLE_INVALID: Cap table shares do not sum to 10,000 bps or deductions >= 10,000 bps.
+    - ARTWORK_FLAGGED: Artwork carries active compliance/provenance flags.
+    """
     def __init__(self, code: str, message: str = ""):
         super().__init__(f"Rejected ({code}): {message}")
         self.code = code

@@ -1,0 +1,14 @@
+{
+  "status": "REJECTED",
+  "reason_code": "BELOW_RESERVE",
+  "artwork_id": "HFA-101",
+  "currency": "USD",
+  "gross": 200000,
+  "fee": 0,
+  "artist": 0,
+  "community": 0,
+  "dust": 0,
+  "pool": 0,
+  "coowners": [],
+  "producing_layer": "bridge/MeTTa"
+}

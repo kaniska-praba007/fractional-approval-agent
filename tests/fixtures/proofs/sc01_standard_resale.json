@@ -1,0 +1,25 @@
+{
+  "status": "APPROVED",
+  "reason_code": null,
+  "artwork_id": "HFA-101",
+  "currency": "USD",
+  "gross": 1000000,
+  "fee": 0,
+  "artist": 150000,
+  "community": 30000,
+  "dust": 0,
+  "pool": 820000,
+  "coowners": [
+    {
+      "owner": "alice",
+      "wallet": "0xalice",
+      "amount": 492000
+    },
+    {
+      "owner": "bob",
+      "wallet": "0xbob",
+      "amount": 328000
+    }
+  ],
+  "producing_layer": "bridge/MeTTa"
+}

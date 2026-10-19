@@ -1,0 +1,20 @@
+{
+  "status": "APPROVED",
+  "reason_code": null,
+  "artwork_id": "HFA-102",
+  "currency": "USD",
+  "gross": 600000,
+  "fee": 0,
+  "artist": 72000,
+  "community": 18000,
+  "dust": 0,
+  "pool": 510000,
+  "coowners": [
+    {
+      "owner": "charlie",
+      "wallet": "0xcharlie",
+      "amount": 510000
+    }
+  ],
+  "producing_layer": "bridge/MeTTa"
+}

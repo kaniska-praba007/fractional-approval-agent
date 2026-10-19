@@ -1,0 +1,30 @@
+{
+  "status": "APPROVED",
+  "reason_code": null,
+  "artwork_id": "HFA-103",
+  "currency": "USD",
+  "gross": 5000000,
+  "fee": 0,
+  "artist": 600000,
+  "community": 250000,
+  "dust": 0,
+  "pool": 4150000,
+  "coowners": [
+    {
+      "owner": "dave",
+      "wallet": "0xdave",
+      "amount": 2075000
+    },
+    {
+      "owner": "elena",
+      "wallet": "0xelena",
+      "amount": 1245000
+    },
+    {
+      "owner": "frank",
+      "wallet": "0xfrank",
+      "amount": 830000
+    }
+  ],
+  "producing_layer": "bridge/MeTTa"
+}

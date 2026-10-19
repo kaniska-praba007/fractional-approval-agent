@@ -1,0 +1,14 @@
+{
+  "status": "REJECTED",
+  "reason_code": "ENGINE_UNAVAILABLE",
+  "artwork_id": "UNKNOWN-ARTWORK-999",
+  "currency": "USD",
+  "gross": 1000000,
+  "fee": 0,
+  "artist": 0,
+  "community": 0,
+  "dust": 0,
+  "pool": 0,
+  "coowners": [],
+  "producing_layer": "bridge_fail_closed"
+}

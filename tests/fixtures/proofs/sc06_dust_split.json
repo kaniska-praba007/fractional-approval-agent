@@ -1,0 +1,30 @@
+{
+  "status": "APPROVED",
+  "reason_code": null,
+  "artwork_id": "TEST-DUST",
+  "currency": "USD",
+  "gross": 10001,
+  "fee": 0,
+  "artist": 0,
+  "community": 0,
+  "dust": 1,
+  "pool": 10001,
+  "coowners": [
+    {
+      "owner": "holder_a",
+      "wallet": "0xholder_a",
+      "amount": 3333
+    },
+    {
+      "owner": "holder_b",
+      "wallet": "0xholder_b",
+      "amount": 3333
+    },
+    {
+      "owner": "holder_c",
+      "wallet": "0xholder_c",
+      "amount": 3334
+    }
+  ],
+  "producing_layer": "bridge/MeTTa"
+}
