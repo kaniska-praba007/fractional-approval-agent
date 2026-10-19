@@ -19,8 +19,11 @@
 | **Financial & Domain Rules** | **TASK 1 VERIFIED** | Level B (Executed) | Synthetic registry `data/artworks.json`, independent test oracle, SC-01 to SC-09 scenarios, 31/31 tests passing. |
 | **Hyperon MeTTa Settlement** | **TASK 2 VERIFIED** | Level B (Executed) | Fiduciary settlement & rejection rules in `metta/royalties.metta`, native Atom API bridge, 42/42 tests passing. |
 | **Branch Architecture & Fixtures** | **STAGE 3 & 4 VERIFIED** | Level B (Executed) | Master branch guide, shared proof contract, real bridge proof fixtures, teammate prompts. |
-| **Audit Trail & Override** | **PENDING** | - | Append-only symbolic audit log & live re-evaluation with manager override. |
-| **Compliance UI** | **PENDING** | - | Streamlit dashboard for application review, "Why?" inspection, and overrides. |
+| **Developer Scaffold & Stubs** | **SCAFFOLD 0.5 VERIFIED** | Level B (Executed) | Stubs, xfail suite (45 passed, 12 xfailed), 1-click setup, Streamlit proof viewer, onboarding & GitHub templates. |
+| **Audit Trail & Nonce Replay** | **STUB READY (xfail)** | Level B (Executed) | `agent/audit_log.py`, `tests/test_audit.py` ready for teammate on `agent/2.4-audit-log`. |
+| **NLP Rule Parser** | **STUB READY (xfail)** | Level B (Executed) | `agent/parser.py`, `tests/test_parser.py` ready for teammate on `parser/3.1-rule-parser`. |
+| **Simulated Ledger** | **STUB READY (xfail)** | Level B (Executed) | `agent/ledger.py`, `tests/test_ledger.py` ready for teammate on `agent/2.6-sim-ledger`. |
+| **Compliance UI** | **VIEWER READY** | Level B (Executed) | Working Streamlit viewer `app/streamlit_app.py`, ready for dashboard team on `ui/6.1-dashboard`. |
 
 ---
 
@@ -270,18 +273,57 @@ The workflow file is committed at `.github/workflows/ci.yml`.
     3. `ui/6.1-dashboard`: Streamlit multi-page interface reading proof fixtures.
     4. `docs/7.3-readme-disclosure`: final README, proposal notice, architecture map, and AI disclosure.
 
+### 8. Teammate Boilerplate & Developer Scaffold (Scaffold 0.5: VERIFIED)
+- **Typed Pipeline Stubs & Strict Invariant Documentation:**
+  - `agent/audit_log.py`: Append-only hash-chained SHA-256 audit log, nonce replay detection, chain verification stubs. Raises `NotImplementedError`.
+  - `agent/parser.py`: Currency string parser (`12k` -> `1200000`, `$12,500` -> `1250000`), adversarial prompt injection defenses. Raises `NotImplementedError`.
+  - `agent/ledger.py`: Simulated double-entry integer-cents ledger; copies amounts from verified proof without calculating, checks zero-sum conservation. Raises `NotImplementedError`.
+  - `agent/settle.py`: End-to-end settlement pipeline interface (`parse -> validate -> bridge -> proof -> audit log -> ledger`) with offline default (`OFFLINE_MODE=1`).
+  - `app/streamlit_app.py`: Working Streamlit proof viewer displaying all 9 fixture scenarios (`SC-01` to `SC-09`), displaying status, reason code, producing layer, amounts, and raw JSON with a prominent "Simulated, synthetic data only" banner and zero UI math.
+- **TDD Test Suite with `xfail` Markers:**
+  - `tests/test_audit.py` (3 tests), `tests/test_parser.py` (4 tests), `tests/test_ledger.py` (5 tests).
+  - Configured with `@pytest.mark.xfail(strict=False)` allowing suite to remain 100% green: **45 passed, 12 xfailed in 7.91s**.
+- **One-Command Setup & Offline Guarantees:**
+  - `scripts/setup.ps1` & `scripts/setup.sh`: Idempotent virtual environment creation selecting Python 3.10-3.12 (for Hyperon binary wheel compatibility), pinned requirements installation, automatic `.env` creation, and test suite execution.
+  - Pinned `requirements.txt` with `hyperon==0.2.10`, `pytest==9.1.1`, `streamlit==1.66.0`, `pydantic==2.14.1`.
+  - `.env.example` with `OFFLINE_MODE=1` and blank `GEMINI_API_KEY=`. Verified `.env` in `.gitignore` and tree clean of secrets.
+- **Onboarding Documentation & Decision Log:**
+  - `docs/START_HERE.md`: 1-page onboarding guide with 3-line elevator pitch, 9-stage pipeline, 6 hard rules, setup commands, teammate assignment table, PR flow, and freeze schedule.
+  - `docs/DECISIONS.md`: Dated ADR decision log documenting conservation definitions, unified reason codes, SC-09 fallback behavior, fact/rule authority, and open/unverified questions.
+  - `docs/HANDOFF.md`: Updated with superseded notice pointing to START_HERE and DECISIONS.
+  - `AGENTS.md`: Top "Read first" notice pointing to START_HERE and DECISIONS.
+- **GitHub Templates & Branch Protection:**
+  - `.github/PULL_REQUEST_TEMPLATE.md`: 7-point PR readiness checklist.
+  - `.github/ISSUE_TEMPLATE/task.md`: Standardized task issue template.
+  - `docs/ISSUES_TO_CREATE.md`: Copy-paste issue descriptions for all 6 upcoming sprint branches labeled for "Tue 2 PM IST freeze".
+  - `docs/BRANCH_PROTECTION.md`: Step-by-step branch protection guide for GitHub repo settings and free tier team agreements.
+- **Teammate Prompts & Branch Matrix Updates:**
+  - Added `agent/2.6-sim-ledger` owning `agent/ledger.py` and `tests/test_ledger.py`.
+  - Standardized all prompt headers in `docs/TEAM_PROMPTS.md`.
+  - Updated `docs/BRANCHES.md` matrix, specification, and Mermaid dependency graph.
+- **Fresh-Clone Verification (Level B Executed):**
+  - Cloned clean repository into independent directory outside repo (`scratch/fresh_clone_test`).
+  - Executed `scripts/setup.ps1`: Created Python 3.12 venv, installed dependencies, verified **45 passed, 12 xfailed in 8.05s**.
+  - Executed `import app.streamlit_app`: Streamlit app imported cleanly with 0 errors.
+
 ---
 
 ## Next Steps & Roadmap
 
-1. **Parallel Teammate Execution (via `docs/TEAM_PROMPTS.md`):**
-   - Teammate 1: Implement `agent/2.4-audit-log` (hash-chained audit trail).
-   - Teammate 2: Implement `parser/3.1-rule-parser` (rule-based NLP parser).
-   - Teammate 3: Implement `ui/6.1-dashboard` (Streamlit multi-page interface).
-2. **Lead Override Wiring (`agent/2.5-override-wiring`):**
-   - Connect bridge output directly to the proof contract, integrate manager override re-evaluation, and enforce 15-character rationale requirement.
-3. **Submission Finalization (`docs/7.3-readme-disclosure`):**
-   - Synthesize final README, architecture diagram, submission checklist, and record 3-minute video before deadline lock (Tue 20 Oct 2026, 8:30 PM IST).
+1. **Open Pull Request for Scaffold 0.5:**
+   - Merge `scaffold/0.5-teammate-boilerplate` into `main` after review.
+2. **Launch Teammate Branches (via `docs/ISSUES_TO_CREATE.md` & `docs/TEAM_PROMPTS.md`):**
+   - Teammate 1: `agent/2.4-audit-log` (hash-chained audit log & nonce replay defense).
+   - Teammate 2: `parser/3.1-rule-parser` (rule-based NLP parser & prompt injection defense).
+   - Teammate 3: `agent/2.6-sim-ledger` (simulated double-entry ledger in integer cents).
+   - Teammate 4: `ui/6.1-dashboard` (Streamlit multi-page compliance interface).
+3. **Lead Branch Execution:**
+   - Lead: `agent/2.5-override-wiring` (connect bridge output to proof contract and live manager overrides).
+   - Lead / Teammate: `docs/7.3-readme-disclosure` (final README, architecture map, and AI disclosure).
+4. **Final Freeze & Submission:**
+   - Feature Freeze: Tuesday 20 Oct 2026, ~2:00 PM IST.
+   - Target Submit: Tuesday 20 Oct 2026, 7:00 PM IST.
+   - Official Lock: Tuesday 20 Oct 2026, 8:30 PM IST.
 
 
 
