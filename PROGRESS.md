@@ -23,6 +23,56 @@
 
 ---
 
+## Git Branch Topology, Commits & Merges
+
+### Active & Historical Branches
+- **`main`** (Base branch): Stable mainline tracking official deliverables. Head at merge commit `d1ace45`.
+- **`spike/metta-omega-integration`** (Historical spike branch): Initial foundation branch where Hyperon MeTTa bridge (`40d3d73`) and Omega research were performed; merged into `origin/main` as PR #1 (`bba2383`).
+- **`data/0.3-synthetic-registry`** (Task 1 branch): Branched from clean `main`. Contains `data/artworks.json`, `tests/oracle.py`, scenario definitions `SC-01` to `SC-09`, and `.github/workflows/ci.yml` (commit `f289523`).
+- **`metta/1.3-settlement-rule`** (Task 2 active branch): Branched from `data/0.3-synthetic-registry`. Contains pure symbolic settlement rules in `metta/royalties.metta`, direct assertion tests `metta/tests/test_royalties.metta`, and native Hyperon Atom API bridge in `agent/bridge.py` (commit `8abd9f7`).
+
+### Complete Commit History & Merges Graph
+```
+* 8abd9f7 (HEAD -> metta/1.3-settlement-rule) feat(metta): fiduciary settlement rules, test suite, and native atom bridge [1.3-settlement-rule]
+* f289523 (data/0.3-synthetic-registry) feat(data): synthetic artworks registry, test oracle, and scenario definitions [0.3-synthetic-registry]
+*   d1ace45 (main) merge: resolve documentation conflicts with origin/main
+|\  
+| * bba2383 (origin/main) Spike/metta omega integration (#1)
+* | 8844461 docs: restore guardrails, add handoff and CI, log spike progress
+| | * 40d3d73 (spike/metta-omega-integration, origin/spike/metta-omega-integration) feat: verified Hyperon MeTTa adapter, tests, and Omega investigation notes
+| |/  
+|/|   
+* | 3f7f24c docs: markdown skills for handling omega and metta
+|/  
+* dfe9ece docs: created CONTEXT for agents
+* c38f045 chore: initial scaffold with PowerShell environment, VS Code config, and team git workflow
+* f27b407 initial commit
+* fa2515b Initial commit
+* 5ef363a Agent host session 8be1f554-8021-41ca-98c3-daa2b84779c6 - baseline checkpoint
+```
+
+### Merges Done
+1. **PR #1 Merge (`bba2383`)**: Merged `spike/metta-omega-integration` into `origin/main`.
+2. **Main Conflict Resolution Merge (`d1ace45`)**: Resolved documentation merge divergence between remote `origin/main` (`bba2383`) and local verified docs (`8844461`) using Option A, preserving all verified runtime documentation and guardrails.
+
+---
+
+## Continuous Integration & Automated Guardrails (`.github/workflows/ci.yml`)
+
+### Location & Purpose
+GitHub Actions automatically discovers workflow files placed inside `.github/workflows/`.
+The workflow file is committed at `.github/workflows/ci.yml`.
+
+### Triggers & Enforced Checks
+- **Triggers:** Automatically runs on every `push` to `main` and on all `pull_request` events.
+- **Environment:** Ubuntu runner on `python-version: '3.12'` with `pip install -r requirements.txt`.
+- **Enforced Guardrails:**
+  1. **Decimal Guard in MeTTa:** `grep -nE '[0-9]+\.[0-9]+' metta/*.metta` fails if any decimal literals or floats appear in symbolic code or comments.
+  2. **Python Floating Point & Silent Error Guard:** `grep -rnE 'float\(|except:[[:space:]]*$|except Exception:[[:space:]]*pass' agent app` fails if floats or unhandled bare/pass exceptions are detected.
+  3. **Full Automated Test Suite:** `pytest -q` executes all 42 unit, integration, and MeTTa assertion tests. All tests must pass before merging.
+
+---
+
 ## Detailed Session Achievements
 
 ### 1. MeTTa / Hyperon Foundation & Verification

@@ -34,7 +34,7 @@ Read this file first and follow it for the whole session. The architecture, mone
 - Work on a branch named for the task (`area/task-id-name`). Never commit to or push `main`. Never force-push.
 - Commit format: `type(scope): summary [task-id]`. Add an `Assisted-by: <tool and model>` line to AI-assisted commits.
 - Small commits. Do not rewrite files that are not part of the task. Do not create empty placeholder files.
-- Add a short entry to `PROGRESS.md` when a task is done.
+- Add a detailed entry to `PROGRESS.md` when a task is done, and update `PROGRESS.md` after each sprint.
 
 ## Before submitting
 - Work through `SUBMISSION.md` and report each item as passed, failed or not applicable.
