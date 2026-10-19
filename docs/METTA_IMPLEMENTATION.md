@@ -1,6 +1,44 @@
 # MeTTa / Hyperon Implementation Guide
 
-**Status:** Implementation guidance; runtime and expressions remain unverified until executed in the project environment.
+**Status:** Hyperon runtime **verified** (2026-10-19) for the minimal ownership example below. Domain/royalty rules remain unwritten and unverified.
+
+## Verified runtime (executed, not assumed)
+
+| Item | Value |
+| --- | --- |
+| OS | Windows (PowerShell) |
+| Python | 3.12.10 (`.venv`); a `docs/.venv` with Python 3.13.7 also exists but was not used |
+| Package | `hyperon==0.2.10` (PyPI, wheel; no compiler or other service needed). Pinned in `requirements.txt` |
+| Install | `python -m venv .venv` then `.venv\Scripts\pip install -r requirements.txt` |
+
+Rule file: [`metta/ownership_demo.metta`](../metta/ownership_demo.metta) (neutral demo domain; no payout policy):
+
+```metta
+(= (collective-owner $artwork $collective)
+   (match &self (, (owner-of $artwork $person) (member-of $person $collective)) $collective))
+```
+
+Facts `(owner-of artwork1 alice)` and `(member-of alice collective1)` plus query `!(collective-owner artwork1 $result)` were run through `hyperon.MeTTa().run(...)`. Actual output: `[[collective1]]`.
+
+Reproduce (tests execute the real runtime):
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -m integration -v   # real Hyperon only
+.\.venv\Scripts\python.exe -m pytest -v                  # unit + integration
+```
+
+Result on 2026-10-19: 17 passed (9 unit, 8 integration) in 0.48s.
+
+### Observed runtime behaviour (affects the adapter)
+
+- A rule that does not match yields an **empty** result `[[]]` (not an error) -> adapter `no_result`.
+- An unknown function or a non-reducing expression is returned **unchanged as a normal result** (e.g. `[[(nonexistent-fn 1)]]`) with no error. The adapter therefore accepts only plain identifier symbols as conclusions and treats anything else as `engine_error`.
+- Syntax errors (e.g. unbalanced parentheses) raise `RuntimeError` from `MeTTa.run`.
+- Two things were not verified: behaviour on other OSes and Python versions, and a hard timeout. The adapter's timeout abandons a worker thread; it cannot kill a runaway evaluation (use a subprocess if hard limits are needed later).
+
+### Adapter
+
+[`agent/bridge.py`](../agent/bridge.py) exposes `run_reasoning(ReasoningRequest) -> ReasoningResult` with statuses `success`, `no_result`, `invalid_input`, `engine_error`, `timeout`. Only `success` carries conclusions. Identifiers are regex-validated and fact relations come from an allow-list, so user text is never concatenated into MeTTa. The result keeps the exact program, raw output, diagnostics and the engine version. Tests: `tests/test_bridge.py` (unit, fake runner for failure paths; proves nothing about the real runtime) and `tests/test_bridge_integration.py` (real runtime, skipped if `hyperon` is absent).
 
 ## Goal and boundary
 

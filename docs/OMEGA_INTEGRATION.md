@@ -1,6 +1,31 @@
 # Omega Integration Guide
 
-**Status:** Decision pending a minimal local experiment and, if possible, organizer clarification.
+**Status:** Investigated, **not integrated**. Decision gate: neither `VERIFIED` nor `FALLBACK` is selected yet. No Omega code was executed as Omega. Evidence levels: **A** = documented/source-read, **B** = verified by execution, **C** = proposed, untested.
+
+## Findings (2026-10-19)
+
+Source inspected: `https://github.com/singnet/Omega`, shallow clone at commit `1a7624e` (merge of PR #382, 2026-10-16). `docs/omega-reference/` referenced below does **not exist** in this repo, so the upstream repo's own `docs/` was used instead.
+
+| # | Finding | Level |
+| --- | --- | --- |
+| 1 | Omega is an LLM-driven agent loop written in MeTTa, run on **PeTTa** (trueagi-io/PeTTa, SWI-Prolog), not on the `hyperon` Python package. Entry point `run.metta` ends with `!(omega)`. | A |
+| 2 | Prerequisites: SWI-Prolog >= 10.0.2, C compiler (janus-swi), PeTTa clone, `petta_lib_chromadb`, and `requirements.txt` (torch, chromadb, transformers, sentence-transformers, openai, etc.). Or a Docker image (`singularitynet/omega:v0.1.20`). | A |
+| 3 | The loop needs an LLM provider key (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `ASI_API_KEY`, `ASIONE_API_KEY`, `OPENAIAPI_API_KEY` or `OPENROUTER_API_KEY`). Config comes from CLI flags, `OMEGA_<key>` env vars, then `config/config.yaml`. | A |
+| 4 | The `metta` skill is `(metta sexpression)`, a MeTTa equation inside the agent's atomspace. It is reached only when the LLM emits `((metta "...") ...)` and `src/loop.metta` evals it. Source/docs describe no stable host-callable API (no Python/REST entry point for a single skill call). | A |
+| 5 | Custom skills are added in `src/skills.metta` (tutorial-03), i.e. by modifying or forking Omega. | A |
+| 6 | Environment here: `swipl` not installed; Docker 29.8.1 daemon reachable; WSL2 (Ubuntu) present; no LLM key variables set. | B |
+| 7 | **Omega's `lib_nal.metta` loads in `hyperon==0.2.10` without error, but `!(\|- A B)` does not reduce**: it returns an unreduced `(collapse (superpose ((\|-nal ...) ...)))`. The lib uses PeTTa-specific primitives (e.g. `unique-atom`) so it is not portable to this Hyperon unchanged. Root cause was not isolated further. | B |
+| 8 | Whether the Omega Docker image can be driven non-interactively with a single `metta` call and no LLM key is unknown. | Unknown |
+
+## Conclusion and recommendation
+
+- A "smallest viable" Omega integration needs the real Omega process (Docker or PeTTa) plus an LLM key, because the documented invocation path is the LLM loop. A complete Omega daemon is therefore effectively required for genuine integration. This is documented (A), not proven by running it.
+- Nothing in this repo claims Omega integration. `agent/bridge.py` is Hyperon-only and its docstring says so.
+- Proposed (C, untested): run the Omega Docker image with a provider key, send it a task through its documented channel, and record its `metta` skill output. Ask organizers whether the Omega requirement allows MeTTa on Hyperon without the Omega agent (**FALLBACK** per the gate below requires disclosing that limitation).
+- Open questions: does a non-LLM or scripted entry point exist (check `entrypoint.sh`, `scripts/omega`, `tests/`)? Is the `metta` skill's audit output capturable outside the chat history? Which exact stack does the hackathon judge accept?
+
+Not done: PeTTa/SWI-Prolog install, Docker image pull, any Omega skill call, a custom skill, an `OmegaAdapter`. No LLM calls were made and no keys were used.
+
 
 ## Objective
 

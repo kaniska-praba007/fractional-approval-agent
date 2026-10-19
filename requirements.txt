@@ -1,4 +1,4 @@
-﻿hyperon
+hyperon==0.2.10
 pytest
 streamlit
 pydantic
