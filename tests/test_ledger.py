@@ -127,3 +127,13 @@ def test_reset_clears_ledger():
     assert ledger._TRANSACTIONS == []
     assert ledger._NONCES == set()
     assert verify() is True
+
+
+def test_ledger_empty_state_returns_clean_status():
+    ledger.reset()
+    st = ledger.status()
+    assert st["status"] == "LEDGER_INITIALIZED_ZERO_ENTRIES"
+    assert st["transaction_count"] == 0
+    assert st["entry_count"] == 0
+    assert st["balances"] == {}
+    assert verify() is True
