@@ -689,6 +689,9 @@ sequenceDiagram
 | **SC-07** | F6 | `sc07_duplicate_nonce.json` | `audit_log` | `REJECTED` | `DUPLICATE_NONCE` | `tests/test_audit.py::test_duplicate_nonce_detected` *(xfail)* |
 | **SC-08** | F7 | `sc08_metta_unavailable.json` | `bridge_fail_closed`| `REJECTED` | `ENGINE_UNAVAILABLE` | `tests/test_bridge_settlement.py::test_fail_closed_unknown_artwork` |
 | **SC-09** | F8 | `sc09_llm_unavailable.json` | `parser` | `APPROVED` | `null` | *(No dedicated test yet; covered in parser suite)* |
+| **SC-10** | F1 | `sc10_platform_fee.json` | `bridge/MeTTa` | `APPROVED` | `null` | `tests/test_bridge_settlement.py::test_sc10_platform_fee` |
+| **SC-11** | F1 | `sc11_kes_currency.json` | `bridge/MeTTa` | `APPROVED` | `null` | `tests/test_bridge_settlement.py::test_sc11_kes_same_currency` |
+| **SC-12** | F1 | `sc12_kes_currency_mismatch.json` | `bridge/MeTTa` | `REJECTED` | `UNSUPPORTED_CURRENCY` | `tests/test_bridge_settlement.py::test_sc12_kes_currency_mismatch` |
 
 ---
 

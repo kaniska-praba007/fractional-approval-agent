@@ -24,8 +24,10 @@ Per `AGENTS.md`:
 | `spike/metta-omega-integration` | **Merged** (PR #1) | `main` | Lead | Hyperon MeTTa adapter spike & Omega live container verification. |
 | `data/0.3-synthetic-registry` | **Merged** | `main` | Lead | Synthetic artwork catalog, test oracle, scenarios SC-01 to SC-09. |
 | `metta/1.3-settlement-rule` | **Merged** | `data/0.3-synthetic-registry` | Lead | Pure MeTTa settlement rules, direct assertion tests, Atom API bridge. |
-| `metta/1.4-bridge-hardening` | **Active** | `main` | Lead | Bridge argument hardening (rejects parens, quotes, whitespace, nested expressions) and native Hyperon Atom API fact generation. |
-| `docs/7.0-branch-guide` | **Active** | `main` | Lead | Branch guide, proof contract, fixtures, and teammate prompt specifications. |
+| `metta/1.4-bridge-hardening` | **Merged** (PR #5) | `main` | Lead | Bridge argument hardening and native Hyperon Atom API fact generation. |
+| `docs/7.0-branch-guide` | **Merged** (PR #4) | `main` | Lead | Branch guide, proof contract, fixtures, and teammate prompt specifications. |
+| `scaffold/0.5-teammate-boilerplate` | **Merged** (PR #6) | `main` | Team | Teammate stubs, xfail suite, 1-click setup, proof viewer, onboarding docs. |
+| `metta/1.5-edge-cases` | **Active** | `main` | Lead | Platform fee remainder floor rounding (SC-10) and same-currency KES settlement (SC-11, SC-12). |
 | `agent/2.4-audit-log` | **Planned** | `main` | Teammate | Append-only, hash-chained audit log with idempotency/nonce check. |
 | `parser/3.1-rule-parser` | **Planned** | `main` | Teammate | Deterministic rule-based bid parser ("12k" -> integer cents) with injection defense. |
 | `agent/2.6-sim-ledger` | **Planned** | `main` | Teammate | Simulated double-entry ledger in integer cents. |
@@ -75,6 +77,16 @@ Per `AGENTS.md`:
 - **Files Forbidden to Touch:** `agent/*`, `metta/*`, `data/*`.
 - **How to Test:** Verify markdown links, validate JSON fixtures with `json.load()`.
 - **Merge Order:** Merges to `main` SECOND (immediately after `metta/1.4-bridge-hardening`).
+
+#### 6. `metta/1.5-edge-cases`
+- **Purpose:** Platform fee remainder floor rounding (SC-10), same-currency KES settlement (SC-11), and currency mismatch rejection (SC-12), with extended fuzz conservation invariants across all artworks.
+- **Base:** `main`
+- **Files Touched:** `data/artworks.json`, `tests/scenarios/sc10*.json`, `tests/scenarios/sc11*.json`, `tests/scenarios/sc12*.json`, `tests/fixtures/proofs/sc10*.json`, `tests/fixtures/proofs/sc11*.json`, `tests/fixtures/proofs/sc12*.json`, `tests/test_oracle.py`, `tests/test_registry.py`, `tests/test_bridge_settlement.py`, `scripts/generate_proof_fixtures.py`, `docs/FLOWS.md`, `docs/DECISIONS.md`, `docs/BRANCHES.md`, `docs/PROOF_SHAPE.md`.
+- **How to Test:**
+  ```powershell
+  pytest tests/test_oracle.py tests/test_registry.py tests/test_bridge_settlement.py -v
+  ```
+- **Merge Order:** Merged into `main` before teammate sprint execution.
 
 ---
 
