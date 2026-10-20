@@ -423,6 +423,21 @@ The workflow file is committed at `.github/workflows/ci.yml`.
 
 ---
 
+### 13. Streamlit Multi-View Compliance Dashboard & UI/UX Redesign (Task 6.1: VERIFIED)
+
+- **FinTech Glassmorphic Design System (.streamlit/config.toml & pp/streamlit_app.py):**
+  - Dark-mode responsive UI with custom CSS styling, clean typography, responsive metric cards, and status badges (APPROVED vs REJECTED).
+  - Strict compliance with AGENTS.md and docs/PROOF_SHAPE.md: **Zero money math** performed in the frontend; all figures displayed verbatim in integer minor units (cents).
+  - Prominent synthetic data warning banner.
+- **Interactive Multi-View Dashboard Tabs:**
+  - **Proof Inspector:** Interactive scenario selector loading canonical proof fixtures (sc01 through sc12), displaying verdicts, layer attribution, breakdown cards, and fractional co-owner tables.
+  - **Live Simulator:** Real-time neuro-symbolic reasoning runner supporting structured input parameters and natural language prompts, manager overrides, and anti-replay nonces.
+  - **Artwork Registry:** Live explorer for registered synthetic assets, floor reserves, royalty bounds, and fractional cap tables.
+  - **Audit Trail:** Visual explorer for SHA-256 hash-chained immutable audit log entries with block indices and prev-hash verification.
+- **Full Test Suite Status:** **132 passed, 6 xfailed in 13.39s**.
+
+---
+
 ## Next Steps & Roadmap
 
 1. **Open Pull Request for `parser/3.1-rule-parser` into `main`:**
