@@ -66,7 +66,8 @@ streamlit run app/streamlit_app.py
 - **Final Hackathon Submission Lock:** Tuesday 20 Oct 2026, 8:30 PM IST
 
 ## Reference Links
-- [docs/FLOWS.md](file:///c:/Users/Der%20Krieger%20Goose/fractional-approval-agent/docs/FLOWS.md): Visual transaction flow diagrams.
-- [docs/PROOF_SHAPE.md](file:///c:/Users/Der%20Krieger%20Goose/fractional-approval-agent/docs/PROOF_SHAPE.md): Canonical proof atom JSON contract & reason codes.
-- [docs/BRANCHES.md](file:///c:/Users/Der%20Krieger%20Goose/fractional-approval-agent/docs/BRANCHES.md): Branch lifecycle, allowed files, and sequential merge order.
-- [docs/TEAM_PROMPTS.md](file:///c:/Users/Der%20Krieger%20Goose/fractional-approval-agent/docs/TEAM_PROMPTS.md): Ready-to-use teammate task prompts.
+- [docs/FLOWS.md](FLOWS.md): Detailed transaction flows, sequence diagrams, and actor interactions.
+- [docs/PROOF_SHAPE.md](PROOF_SHAPE.md): Canonical proof atom JSON contract & reason codes.
+- [docs/BRANCHES.md](BRANCHES.md): Branch lifecycle, allowed files, and sequential merge order.
+- [docs/TEAM_PROMPTS.md](TEAM_PROMPTS.md): Ready-to-use teammate task prompts.
+- [docs/DECISIONS.md](DECISIONS.md): Architectural decisions and dated ADR log.

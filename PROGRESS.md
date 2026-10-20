@@ -306,11 +306,27 @@ The workflow file is committed at `.github/workflows/ci.yml`.
   - Executed `scripts/setup.ps1`: Created Python 3.12 venv, installed dependencies, verified **45 passed, 12 xfailed in 8.05s**.
   - Executed `import app.streamlit_app`: Streamlit app imported cleanly with 0 errors.
 
+### 9. Comprehensive System Transaction Flows Guide (Docs 0.6: VERIFIED)
+- **Authoritative Operational Reference (`docs/FLOWS.md`):**
+  - Synthesized comprehensive 11-section transaction flows and implementation guide enabling independent teammate execution.
+  - Formulates the 9-stage pipeline and trust boundary table (parser reads text -> validation sanitizes -> bridge invokes MeTTa -> MeTTa calculates -> proof packages -> audit log commits -> ledger verifies zero-sum -> UI displays).
+  - Documents 4 actors: Operator, Manager, Auditor, Judge.
+  - Specifies 10 complete transaction flows (F1 through F10) with exact concrete inputs, step-by-step layer/function calls, JSON outputs, audit entries, ledger effects, failure paths, UI elements, and scenario fixtures.
+  - Defines the role of SingularityNET Omega as an optional cognitive operator off the critical path, marks Omega-on-PeTTa parity as UNVERIFIED, and lists 3 mandatory pre-camera verification checks.
+  - Specifies data contracts for `settle()` requests, proof dictionaries, audit log blocks, ledger journal entries, and nonce validation rules.
+  - Includes Mermaid sequence diagrams for Flow F1 (Standard Resale), Flow F3 (Manager Override with Re-evaluation), and Flow F6 (Replay Defense).
+  - Provides a complete Scenario Mapping Matrix for SC-01 through SC-09 linking each scenario to its flow, fixture file, producing layer, reason code, and test coverage.
+  - Defines the "Definition of Done per Branch" mapping each branch to its required passing tests.
+  - Outlines the 3-minute demo video script with timed cues (0:00 to 3:00) and explicit synthetic data / proposal notices.
+  - Analyzes architectural gaps, risks, and documents 4 specific conflicts found between `docs/CONTEXT.md` and authoritative code.
+- **Cross-Reference Hygiene:**
+  - Updated `docs/START_HERE.md` to link directly to `docs/FLOWS.md` with relative links.
+
 ---
 
 ## Next Steps & Roadmap
 
-1. **Open Pull Request for Scaffold 0.5:**
+1. **Open Pull Request for Scaffold 0.5 & Flows 0.6:**
    - Merge `scaffold/0.5-teammate-boilerplate` into `main` after review.
 2. **Launch Teammate Branches (via `docs/ISSUES_TO_CREATE.md` & `docs/TEAM_PROMPTS.md`):**
    - Teammate 1: `agent/2.4-audit-log` (hash-chained audit log & nonce replay defense).
