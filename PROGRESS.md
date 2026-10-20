@@ -322,13 +322,22 @@ The workflow file is committed at `.github/workflows/ci.yml`.
 - **Cross-Reference Hygiene:**
   - Updated `docs/START_HERE.md` to link directly to `docs/FLOWS.md` with relative links.
 
+### 10. Context Precedence & Document Alignment (Docs 0.7: VERIFIED)
+- **Authoritative Precedence Notice (`docs/CONTEXT.md`):**
+  - Added explicit top-level precedence banner resolving conflicts between early blueprint documentation and formal executable specifications.
+  - Mandated that where `docs/CONTEXT.md` disagrees with `docs/PROOF_SHAPE.md`, `docs/DECISIONS.md`, or `metta/royalties.metta`, the latter canonical files take precedence.
+  - Documented known differences: platform fee in conservation equation, `(rejected CODE ...)` atom syntax, terminal `APPROVED`/`REJECTED` statuses, and standardized `BELOW_RESERVE` and `ENGINE_UNAVAILABLE` reason codes, cross-referencing `docs/FLOWS.md`.
+- **Test File Naming Verification:**
+  - Audited all test references across `docs/TEAM_PROMPTS.md` and `docs/BRANCHES.md`.
+  - Confirmed 100% naming alignment with real files: `tests/test_audit.py`, `tests/test_parser.py`, and `tests/test_ledger.py`.
+
 ---
 
 ## Next Steps & Roadmap
 
-1. **Open Pull Request for Scaffold 0.5 & Flows 0.6:**
-   - Merge `scaffold/0.5-teammate-boilerplate` into `main` after review.
-2. **Launch Teammate Branches (via `docs/ISSUES_TO_CREATE.md` & `docs/TEAM_PROMPTS.md`):**
+1. **Open Pull Request for Docs 0.7:**
+   - Merge `docs/0.7-context-note` into `main` after review.
+2. **Launch Teammate Sprint Branches (via `docs/ISSUES_TO_CREATE.md` & `docs/TEAM_PROMPTS.md`):**
    - Teammate 1: `agent/2.4-audit-log` (hash-chained audit log & nonce replay defense).
    - Teammate 2: `parser/3.1-rule-parser` (rule-based NLP parser & prompt injection defense).
    - Teammate 3: `agent/2.6-sim-ledger` (simulated double-entry ledger in integer cents).

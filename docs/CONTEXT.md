@@ -1,3 +1,5 @@
+> NOTE: Where this file disagrees with docs/PROOF_SHAPE.md, docs/DECISIONS.md or metta/royalties.metta, those win. Known differences: platform fee is included in the conservation equation; rejection form is (rejected CODE ...); terminal statuses are APPROVED and REJECTED (not PENDING_SETTLEMENT); reason codes are BELOW_RESERVE and ENGINE_UNAVAILABLE (not BelowReserveFloor or FAILED_CLOSED). See the 'Conflicts found' section in docs/FLOWS.md.
+
 ### Part 1: Architecture Decision — Is Streamlit the Right Choice?
 
 **Yes, Streamlit is the best choice for this hackathon**, with one crucial requirement: **it must be multi-page**.
