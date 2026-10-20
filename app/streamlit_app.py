@@ -50,6 +50,17 @@ def load_audit_log() -> list[dict[str, Any]]:
     return []
 
 
+def format_currency(amount_minor: int | None, currency: str = "USD") -> str:
+    """Format integer minor units into major.minor currency string using integer divmod only."""
+    if amount_minor is None:
+        amount_minor = 0
+    if not isinstance(amount_minor, int):
+        amount_minor = int(amount_minor)
+    sign = "-" if amount_minor < 0 else ""
+    major, minor = divmod(abs(amount_minor), 100)
+    return f"{sign}{major:,}.{minor:02d} {currency}"
+
+
 def inject_custom_styles() -> None:
     st.markdown(
         """
@@ -103,6 +114,14 @@ def inject_custom_styles() -> None:
         .metric-card:hover {
             transform: translateY(-2px);
             border-color: rgba(99, 102, 241, 0.4);
+        }
+        [data-testid="stMetricValue"] {
+            font-size: 1.25rem !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+        }
+        [data-testid="stMetricLabel"] {
+            font-size: 0.85rem !important;
         }
         .verdict-approved {
             background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.1) 100%);
@@ -232,15 +251,18 @@ def render_scenario_inspector(fixtures: dict[str, dict[str, Any]]) -> None:
         st.metric(label="Producing Layer", value=producing_layer)
 
     st.markdown("---")
-    st.markdown("#### Conservation Breakdown (Integer Minor Units)")
+    st.markdown("#### Conservation Breakdown")
     st.caption("All figures displayed directly as stored in the proof atom (Zero UI Math).")
 
-    m1, m2, m3, m4, m5 = st.columns(5)
-    m1.metric("Gross Amount", f"{proof.get('gross', 0):,} cents")
-    m2.metric("Platform Fee", f"{proof.get('fee', 0):,} cents")
-    m3.metric("Artist Royalty", f"{proof.get('artist', 0):,} cents")
-    m4.metric("Community Fund", f"{proof.get('community', 0):,} cents")
-    m5.metric("Swept Dust", f"{proof.get('dust', 0):,} cents")
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Gross Amount", format_currency(proof.get("gross", 0), currency))
+    m2.metric("Platform Fee", format_currency(proof.get("fee", 0), currency))
+    m3.metric("Distributable Pool", format_currency(proof.get("pool", 0), currency))
+
+    m4, m5, m6 = st.columns(3)
+    m4.metric("Artist Royalty", format_currency(proof.get("artist", 0), currency))
+    m5.metric("Community Fund", format_currency(proof.get("community", 0), currency))
+    m6.metric("Swept Dust", format_currency(proof.get("dust", 0), currency))
 
     coowners = proof.get("coowners", [])
     if coowners:
@@ -251,14 +273,14 @@ def render_scenario_inspector(fixtures: dict[str, dict[str, Any]]) -> None:
                 {
                     "Co-Owner": c.get("owner"),
                     "Wallet Address": c.get("wallet"),
-                    "Disbursed Amount (cents)": f"{c.get('amount', 0):,} cents",
+                    "Disbursed Amount": format_currency(c.get("amount", 0), currency),
                 }
             )
         st.table(table_rows)
     else:
         st.info("No co-owner disbursements. Payout accounts are empty (`coowners: []`).")
 
-    with st.expander("Canonical Proof JSON Structure", expanded=False):
+    with st.expander("Raw proof", expanded=False):
         st.json(proof)
 
 
@@ -275,9 +297,11 @@ def render_live_simulator() -> None:
     col_form, col_info = st.columns([3, 2])
 
     with col_form:
+        default_art_index = artwork_options.index("HFA-101") if "HFA-101" in artwork_options else 0
         selected_art_id = st.selectbox(
             "Select Target Artwork",
             artwork_options,
+            index=default_art_index,
             format_func=lambda aid: f"{aid} - {artwork_map[aid].get('title', '')}",
         )
         target_art = artwork_map[selected_art_id]
@@ -307,13 +331,14 @@ def render_live_simulator() -> None:
 
         submit_pressed = False
         settle_request: dict[str, Any] = {}
+        default_bid_minor = 1000000 if selected_art_id == "HFA-101" else target_art.get("reserve", {}).get("amount_minor", 1000000)
 
         if input_mode == "Structured Parameters":
             gross_minor_val = st.number_input(
                 f"Gross Bid Amount in Minor Units ({default_currency} Cents)",
                 min_value=1,
                 max_value=1000000000,
-                value=target_art.get("reserve", {}).get("amount_minor", 300000),
+                value=default_bid_minor,
                 step=10000,
             )
             nonce_val = st.text_input(
@@ -335,9 +360,10 @@ def render_live_simulator() -> None:
                         "rationale": override_rationale,
                     }
         else:
+            default_bid_major, _ = divmod(default_bid_minor, 100)
             bid_text = st.text_area(
                 "Natural Language Bid Prompt",
-                value=f"Offer ${target_art.get('reserve', {}).get('amount_minor', 300000) // 100:,} for {selected_art_id}",
+                value=f"Offer ${default_bid_major:,} for {selected_art_id}",
             )
             nl_nonce = st.text_input("Transaction Nonce", value=f"nl-tx-{selected_art_id.lower()}-live")
             submit_pressed = st.button("Parse & Settle via Hyperon", type="primary", use_container_width=True)
@@ -360,7 +386,7 @@ def render_live_simulator() -> None:
         st.markdown(f"**Status:** `{target_art.get('status')}`")
         res_amt = target_art.get("reserve", {}).get("amount_minor", 0)
         res_curr = target_art.get("reserve", {}).get("currency", "USD")
-        st.markdown(f"**Reserve Floor:** `{res_amt:,} {res_curr} cents`")
+        st.markdown(f"**Reserve Floor:** `{format_currency(res_amt, res_curr)}`")
         st.markdown(f"**Royalty Baseline:** `{target_art.get('royalty_bps', 0)} bps` (Floor: `{target_art.get('royalty_floor_bps', 0)} bps`)")
         st.markdown(f"**Community Cut:** `{target_art.get('community_bps', 0)} bps`")
         st.markdown(f"**Platform Fee:** `{target_art.get('platform_fee_bps', 0)} bps`")
@@ -380,14 +406,18 @@ def render_live_simulator() -> None:
                 else:
                     st.error(f"**SETTLEMENT REJECTED** &mdash; Reason: `{res_code}` &nbsp;|&nbsp; Layer: `{res_layer}`")
 
-                c1, c2, c3, c4, c5 = st.columns(5)
-                c1.metric("Gross Minor", f"{res_proof.get('gross', 0):,} cents")
-                c2.metric("Platform Fee", f"{res_proof.get('fee', 0):,} cents")
-                c3.metric("Artist Royalty", f"{res_proof.get('artist', 0):,} cents")
-                c4.metric("Community Cut", f"{res_proof.get('community', 0):,} cents")
-                c5.metric("Swept Dust", f"{res_proof.get('dust', 0):,} cents")
+                res_curr = res_proof.get("currency", default_currency)
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Gross Bid", format_currency(res_proof.get("gross", 0), res_curr))
+                c2.metric("Platform Fee", format_currency(res_proof.get("fee", 0), res_curr))
+                c3.metric("Distributable Pool", format_currency(res_proof.get("pool", 0), res_curr))
 
-                with st.expander("Resulting Proof Atom (Canonical)", expanded=True):
+                c4, c5, c6 = st.columns(3)
+                c4.metric("Artist Royalty", format_currency(res_proof.get("artist", 0), res_curr))
+                c5.metric("Community Cut", format_currency(res_proof.get("community", 0), res_curr))
+                c6.metric("Swept Dust", format_currency(res_proof.get("dust", 0), res_curr))
+
+                with st.expander("Raw proof", expanded=False):
                     st.json(res_proof)
             except Exception as e:
                 st.error(f"Settlement failed closed with runtime error: {e}")
@@ -416,7 +446,7 @@ def render_registry_view() -> None:
             with col1:
                 st.markdown("**Covenants:**")
                 res = art.get("reserve", {})
-                st.write(f"- Reserve Price: `{res.get('amount_minor', 0):,} {res.get('currency', 'USD')} cents`")
+                st.write(f"- Reserve Price: `{format_currency(res.get('amount_minor', 0), res.get('currency', 'USD'))}`")
                 st.write(f"- Artist Royalty: `{art.get('royalty_bps', 0)} bps` (Contractual Floor: `{art.get('royalty_floor_bps', 0)} bps`)")
                 st.write(f"- Community Preservation: `{art.get('community_bps', 0)} bps`")
                 st.write(f"- Platform Fee: `{art.get('platform_fee_bps', 0)} bps`")
@@ -447,11 +477,11 @@ def render_audit_trail() -> None:
                     <span style="font-size: 0.8rem; color: #9CA3AF;">{item.get('timestamp')}</span>
                 </div>
                 <div style="font-size: 0.75rem; font-family: monospace; color: #6B7280; margin-top: 0.4rem; word-break: break-all;">
-                    <b>HASH:</b> {item.get('entry_hash')} <br>
+                    <b>HASH:</b> {item.get('hash')} <br>
                     <b>PREV:</b> {item.get('prev_hash')}
                 </div>
                 <div style="margin-top: 0.5rem; font-size: 0.85rem;">
-                    Status: <b>{status}</b> &nbsp;|&nbsp; Artwork: <code>{proof_data.get('artwork_id')}</code> &nbsp;|&nbsp; Gross: <code>{proof_data.get('gross', 0):,} cents</code>
+                    Status: <b>{status}</b> &nbsp;|&nbsp; Artwork: <code>{proof_data.get('artwork_id')}</code> &nbsp;|&nbsp; Gross: <code>{format_currency(proof_data.get('gross', 0), proof_data.get('currency', 'USD'))}</code>
                 </div>
             </div>
             """,

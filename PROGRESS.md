@@ -438,6 +438,27 @@ The workflow file is committed at `.github/workflows/ci.yml`.
 
 ---
 
+### 14. UI Polish & Compliance Display Guardrails (Task 6.2: VERIFIED)
+
+- **Audit Log Hash Key Fix:**
+  - Resolved `HASH: None` bug in the Audit Trail view by aligning the key lookup to `item.get("hash")` (matching the SHA-256 payload written by `agent/audit_log.py`).
+- **Zero-Float Currency Formatting (`divmod`) & Metric Cards Layout:**
+  - Replaced cramped 5-column metric layout with responsive 3-column rows and tuned CSS metric font sizes (`1.25rem`) to eliminate ellipsis truncation.
+  - Implemented `format_currency()` utilizing purely integer arithmetic (`divmod(abs(amount_minor), 100)`), completely prohibiting `float()`, `val / 100`, or `round()`.
+  - Added explicit currency denomination (`USD`, `KES`) to all displayed values across Inspector, Simulator, Registry, and Audit Trail.
+- **Simulator Default Alignment:**
+  - Defaulted target artwork selector to `HFA-101` with `1,000,000 USD` gross bid (matching canonical scenario SC-01).
+- **Proof Structure Containment:**
+  - Removed unintentionally expanded raw JSON view (`expanded=True`); all raw proof atoms are now strictly housed within collapsed expanders labeled `"Raw proof"`.
+- **Producing Layer & Synthetic Asset Integrity:**
+  - Preserved verbatim producing layer attribution strings (`bridge/MeTTa`, `audit_log`, `settle/input_validation`).
+  - Preserved synthetic asset data without external imagery or real artist names.
+- **Verification Commands:**
+  - `git grep -nE "float\(" agent app` -> 0 matches.
+  - `pytest -q` -> **138 passed, 1 xfailed in 13.64s**.
+
+---
+
 ## Next Steps & Roadmap
 
 1. **Open Pull Request for `parser/3.1-rule-parser` into `main`:**
