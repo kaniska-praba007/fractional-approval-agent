@@ -362,13 +362,31 @@ The workflow file is committed at `.github/workflows/ci.yml`.
   - Audited test references across `docs/TEAM_PROMPTS.md` and `docs/BRANCHES.md`.
   - Confirmed naming alignment for `tests/test_audit.py`, `tests/test_parser.py`, and `tests/test_ledger.py`.
 
+### 12. Settlement Pipeline & Manager Override Wiring (Task 2.5: VERIFIED)
+- **Symbolic Pool Exposure in Hyperon Proof Atom (Commit 1):**
+  - Updated `metta/royalties.metta` to append `$pool` as the last child of `(proof ...)`, preserving all existing child positions.
+  - Updated `metta/tests/test_royalties.metta` full-tuple `assertEqual` assertions for SC-01, SC-03, SC-04, and SC-06.
+  - Added `pool_minor: int` to `SettlementProof` in `agent/bridge.py`, parsed directly from `children[11]` via the native Hyperon Atom API with fail-closed integer validation.
+  - Verified `scripts/generate_proof_fixtures.py` remained unchanged and fixtures regenerated identically with zero diff.
+  - Added assertions in `tests/test_bridge_settlement.py` confirming `pool_minor` matches the test oracle across SC-01..SC-06 and SC-10..SC-11.
+- **Bridge-Backed `settle()` Implementation in `agent/settle.py` (Commit 2):**
+  - Implemented `settle(request, offline=True, parser=None, audit=None, ledger=None)` adhering to fail-closed contract.
+  - Strict input validation rejecting booleans, floats, negative values, and non-integer amounts with `INVALID_AMOUNT`.
+  - Zero money math: `settle()` performs zero arithmetic operations (`+`, `-`, `*`, `/`, `//`) on monetary values, copying all numbers verbatim from the MeTTa bridge proof atom.
+  - Enforced manager override constraints: accepts exactly one of `royalty_bps` or `community_bps` with a justification rationale >= 15 characters; routes royalty overrides to `evaluate-resale-override-royalty` and community overrides to `evaluate-resale-override-community`.
+  - Rejections (such as `OVERRIDE_BELOW_FLOOR` and `OVERRIDE_NOT_ALLOWED`) originate purely from MeTTa symbolic reduction, not Python checks.
+- **Test Suite (`tests/test_settle.py`):**
+  - Validates `settle()` against canonical proof fixtures for SC-01 through SC-06 and SC-10 through SC-12.
+  - Covers invalid amount types, unknown artworks, multiple/missing override fields, short rationales, and MeTTa-driven override rejections.
+  - Implements AST source-scan test `test_no_money_math_in_settle_py` asserting zero binary arithmetic on financial fields in `agent/settle.py`.
+- **Full Test Suite Status:** **69 passed, 12 xfailed in 11.76s**.
+
 ---
 
 ## Next Steps & Roadmap
 
-1. **Open Pull Requests for Edge Cases 1.5 and Docs 0.7:**
-   - Review and merge `metta/1.5-edge-cases` into `main`.
-   - Review and merge `docs/0.7-context-note` into `main`.
+1. **Open Pull Request for Override Wiring 2.5:**
+   - Merge `agent/2.5-override-wiring` into `main` after review.
 2. **Launch Teammate Sprint Branches (via `docs/ISSUES_TO_CREATE.md` & `docs/TEAM_PROMPTS.md`):**
    - Teammate 1: `agent/2.4-audit-log` (hash-chained audit log & nonce replay defense), then `agent/2.6-sim-ledger` (simulated double-entry ledger in integer cents).
    - Teammate 2: `parser/3.1-rule-parser` (rule-based NLP parser & prompt injection defense), then `docs/7.3-readme-disclosure` (final README and AI disclosure).
