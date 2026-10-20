@@ -484,3 +484,30 @@ The workflow file is committed at `.github/workflows/ci.yml`.
 - Added empty-ledger verification and currency-separated balances.
 - Separated community and dust ledger entries; added ledger reset support.
 - Tests: 141 passed, 1 xfailed.
+
+---
+
+### 15. Executive Visual Hierarchy & Dual Money Formatting (Task ui/visual-hierarchy: VERIFIED)
+
+- **Framing & Tone Alignment:**
+  - Upgraded header to: `"HFAS #BuyBlackArt — Fractional Approval & Settlement Engine (Proposal Architecture)"`.
+  - Added subtitle emphasizing deterministic neuro-symbolic fiduciary settlement powered by MeTTa / Hyperon.
+  - Prominently rendered synthetic data benchmark disclaimer referencing the Harlem Fine Arts Show (#BuyBlackArt) brief.
+- **Dual Plain-English Integer Money Formatting (`divmod`):**
+  - Implemented `format_money_dual(amount_minor, currency)` rendering `"$10,000.00 USD (1,000,000 cents)"` using strictly integer `divmod(abs(amount_minor), 100)`. Zero floats (`float()`, `val / 100`, or `round()`) throughout.
+  - Implemented `format_money_short(amount_minor, currency)` rendering `"$10,000.00 USD"`.
+  - Maintained backward-compatible alias `format_currency`.
+- **4 Role-Oriented Workflow Tabs:**
+  - **Tab 1: "Marketplace Settlement":** Executive curator console defaulting to `HFA-101` ($10,000.00 USD / 1,000,000 cents). Displays executive 4-metric grid (Gross Sale Price, Artist Royalty [Droit de Suite], Community Preservation Fund, Fractional Net Pool). Segregated synthetic stress-test fixtures (`TEST-DUST`, `TEST-KES`, `TEST-FEE`, and rejected scenarios) inside a collapsed `"Stress-Test & Cross-Border Benchmarks"` expander.
+  - **Tab 2: "Fiduciary Manager Override":** Dedicated governance portal with prominent statutory floor invariant warning (1,000 bps / 10.00% floor), mandatory rationale field (>= 15 characters), floor comparison check, and MeTTa evaluation.
+  - **Tab 3: "Immutable Audit Log":** Verifiable SHA-256 block timeline displaying block indices, nonces, timestamps, block hashes (`item.get("hash")`), previous hashes, and formatted gross amounts.
+  - **Tab 4: "Artwork & Cap Table Registry":** Smart contract covenant explorer and cap table viewer with dual-formatted reserve prices.
+- **Modern Streamlit API & Layout Resilience:**
+  - Replaced all deprecated `use_container_width=True` calls with `width="stretch"`.
+  - Confined all raw proof JSON structures inside collapsed expanders labeled `"Raw proof"`.
+- **Verification Commands:**
+  - `git grep -nE "float\(" agent app` -> 0 matches.
+  - `git grep -nE "/ 100|/100" app/` -> 0 matches.
+  - `git grep -n "use_container_width" app/` -> 0 matches.
+  - `pytest -q` -> **141 passed, 1 xfailed in 32.82s**.
+

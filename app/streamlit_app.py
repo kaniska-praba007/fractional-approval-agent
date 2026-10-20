@@ -1,10 +1,13 @@
-"""Fiduciary Settlement Proof Viewer & Interactive Simulator - Streamlit Dashboard.
+"""HFAS #BuyBlackArt - Fractional Approval & Settlement Engine.
 
-Strict Rule (AGENTS.md & docs/PROOF_SHAPE.md):
+Streamlit Executive Compliance Dashboard & Fiduciary Settlement Console.
+
+Strict Rules (AGENTS.md & docs/PROOF_SHAPE.md):
 - Displays proof atoms and reason codes verbatim from canonical proof fixtures and MeTTa runtime.
 - ZERO money maths in the UI: numbers are displayed directly as stored in the proof.
-- Prominent synthetic data banner.
-- All monetary values are integer minor units (cents).
+- Pure integer arithmetic (divmod) for plain-English financial formatting. Strictly NO floats.
+- Prominent synthetic data notice banner.
+- All JSON proof structures strictly housed in collapsed expanders labeled "Raw proof".
 """
 from __future__ import annotations
 
@@ -50,15 +53,32 @@ def load_audit_log() -> list[dict[str, Any]]:
     return []
 
 
-def format_currency(amount_minor: int | None, currency: str = "USD") -> str:
-    """Format integer minor units into major.minor currency string using integer divmod only."""
+def format_money_dual(amount_minor: int | None, currency: str = "USD") -> str:
+    """Format minor units to '$10,000.00 USD (1,000,000 cents)' using integer arithmetic only."""
     if amount_minor is None:
         amount_minor = 0
     if not isinstance(amount_minor, int):
         amount_minor = int(amount_minor)
     sign = "-" if amount_minor < 0 else ""
     major, minor = divmod(abs(amount_minor), 100)
-    return f"{sign}{major:,}.{minor:02d} {currency}"
+    symbol = "$" if currency == "USD" else f"{currency} "
+    return f"{sign}{symbol}{major:,}.{minor:02d} {currency} ({amount_minor:,} cents)"
+
+
+def format_money_short(amount_minor: int | None, currency: str = "USD") -> str:
+    """Format minor units to '$10,000.00 USD' using integer arithmetic only."""
+    if amount_minor is None:
+        amount_minor = 0
+    if not isinstance(amount_minor, int):
+        amount_minor = int(amount_minor)
+    sign = "-" if amount_minor < 0 else ""
+    major, minor = divmod(abs(amount_minor), 100)
+    symbol = "$" if currency == "USD" else f"{currency} "
+    return f"{sign}{symbol}{major:,}.{minor:02d} {currency}"
+
+
+# Backward-compatibility alias
+format_currency = format_money_dual
 
 
 def inject_custom_styles() -> None:
@@ -67,16 +87,16 @@ def inject_custom_styles() -> None:
         <style>
         /* Modern Glassmorphic / FinTech Theme */
         .block-container {
-            padding-top: 2rem;
+            padding-top: 1.8rem;
             padding-bottom: 3rem;
             max-width: 1200px;
         }
         .main-header {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.12) 100%);
-            border: 1px solid rgba(99, 102, 241, 0.3);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.16) 0%, rgba(168, 85, 247, 0.12) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.35);
             border-radius: 14px;
             padding: 1.5rem 2rem;
-            margin-bottom: 1.8rem;
+            margin-bottom: 1.5rem;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
         }
         .brand-badge {
@@ -92,7 +112,7 @@ def inject_custom_styles() -> None:
             margin-bottom: 0.5rem;
         }
         .title-text {
-            font-size: 2.1rem;
+            font-size: 1.95rem;
             font-weight: 800;
             color: #F9FAFB;
             margin: 0;
@@ -116,12 +136,13 @@ def inject_custom_styles() -> None:
             border-color: rgba(99, 102, 241, 0.4);
         }
         [data-testid="stMetricValue"] {
-            font-size: 1.25rem !important;
+            font-size: 1.15rem !important;
             white-space: normal !important;
             word-break: break-word !important;
         }
         [data-testid="stMetricLabel"] {
             font-size: 0.85rem !important;
+            color: #9CA3AF !important;
         }
         .verdict-approved {
             background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.1) 100%);
@@ -146,16 +167,6 @@ def inject_custom_styles() -> None:
             display: flex;
             align-items: center;
             gap: 0.5rem;
-        }
-        .flow-pill {
-            display: inline-block;
-            background: #1F2937;
-            color: #E5E7EB;
-            padding: 0.25rem 0.65rem;
-            border-radius: 9999px;
-            font-size: 0.8rem;
-            font-family: monospace;
-            border: 1px solid #374151;
         }
         .badge-living {
             background: rgba(16, 185, 129, 0.2);
@@ -185,8 +196,8 @@ def render_header() -> None:
     st.markdown(
         """
         <div class="main-header">
-            <span class="brand-badge">&#x25C6; TrustGate Protocol</span>
-            <div class="title-text">Fractional Approval Agent &amp; Proof Viewer</div>
+            <span class="brand-badge">&#x25C6; HFAS #BuyBlackArt Initiative</span>
+            <div class="title-text">HFAS #BuyBlackArt &mdash; Fractional Approval &amp; Settlement Engine (Proposal Architecture)</div>
             <div class="subtitle-text">
                 Deterministic Neuro-Symbolic Fiduciary Settlement &bull; Powered by MeTTa / Hyperon
             </div>
@@ -196,97 +207,15 @@ def render_header() -> None:
     )
     # Mandatory Synthetic Data Notice (AGENTS.md)
     st.warning(
-        "**Simulated, Synthetic Data Only:** All artwork IDs, prices, valuation curves, "
-        "and wallet addresses are synthetic test fixtures designed for cryptographic verification benchmarks."
+        "**Simulated Synthetic Benchmarks:** In accordance with the Harlem Fine Arts Show (HFAS) #BuyBlackArt brief, "
+        "all artwork records, cap tables, valuation reserves, and wallet addresses are synthetic fixtures "
+        "designed for verifiable fiduciary settlement benchmarks."
     )
 
 
-def render_scenario_inspector(fixtures: dict[str, dict[str, Any]]) -> None:
-    st.markdown("### Fiduciary Settlement Proof Inspector")
-    st.caption("Inspect pre-computed canonical scenario proofs generated through the Hyperon symbolic reasoning kernel.")
-
-    fixture_keys = list(fixtures.keys())
-    
-    col_sel, col_desc = st.columns([2, 3])
-    with col_sel:
-        selected_key = st.selectbox(
-            "Select Scenario Fixture",
-            fixture_keys,
-            format_func=lambda k: f"{k.replace('.json', '').replace('_', ' ').upper()}",
-            index=0,
-        )
-    
-    proof = fixtures[selected_key]
-    status = proof.get("status", "UNKNOWN")
-    reason_code = proof.get("reason_code")
-    producing_layer = proof.get("producing_layer", "unknown")
-    artwork_id = proof.get("artwork_id", "N/A")
-    currency = proof.get("currency", "USD")
-
-    with col_desc:
-        st.markdown(f"**Loaded Fixture:** `{selected_key}` &nbsp;|&nbsp; **Producing Layer:** `{producing_layer}`")
-        if status == "APPROVED":
-            st.markdown(
-                '<div class="verdict-approved">&#x2714; VERDICT: APPROVED (Compliant Resale)</div>',
-                unsafe_allow_html=True,
-            )
-        else:
-            reason_label = reason_code if reason_code else "UNKNOWN_ERROR"
-            st.markdown(
-                f'<div class="verdict-rejected">&#x2716; VERDICT: REJECTED &mdash; {reason_label}</div>',
-                unsafe_allow_html=True,
-            )
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Core Metrics Cards
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        st.metric(label="Artwork ID", value=artwork_id)
-    with c2:
-        st.metric(label="Settlement Currency", value=currency)
-    with c3:
-        st.metric(label="Reason Code", value=str(reason_code) if reason_code else "None (Clean)")
-    with c4:
-        st.metric(label="Producing Layer", value=producing_layer)
-
-    st.markdown("---")
-    st.markdown("#### Conservation Breakdown")
-    st.caption("All figures displayed directly as stored in the proof atom (Zero UI Math).")
-
-    m1, m2, m3 = st.columns(3)
-    m1.metric("Gross Amount", format_currency(proof.get("gross", 0), currency))
-    m2.metric("Platform Fee", format_currency(proof.get("fee", 0), currency))
-    m3.metric("Distributable Pool", format_currency(proof.get("pool", 0), currency))
-
-    m4, m5, m6 = st.columns(3)
-    m4.metric("Artist Royalty", format_currency(proof.get("artist", 0), currency))
-    m5.metric("Community Fund", format_currency(proof.get("community", 0), currency))
-    m6.metric("Swept Dust", format_currency(proof.get("dust", 0), currency))
-
-    coowners = proof.get("coowners", [])
-    if coowners:
-        st.markdown("#### Fractional Co-Owner Payout Allocations")
-        table_rows = []
-        for c in coowners:
-            table_rows.append(
-                {
-                    "Co-Owner": c.get("owner"),
-                    "Wallet Address": c.get("wallet"),
-                    "Disbursed Amount": format_currency(c.get("amount", 0), currency),
-                }
-            )
-        st.table(table_rows)
-    else:
-        st.info("No co-owner disbursements. Payout accounts are empty (`coowners: []`).")
-
-    with st.expander("Raw proof", expanded=False):
-        st.json(proof)
-
-
-def render_live_simulator() -> None:
-    st.markdown("### Live Neuro-Symbolic Settlement Engine")
-    st.caption("Submit a structured or natural language bid to trigger MeTTa verification.")
+def render_marketplace_settlement(fixtures: dict[str, dict[str, Any]]) -> None:
+    st.markdown("### Marketplace Settlement & Fiduciary Verification")
+    st.caption("Executive curator portal: Trigger primary and secondary resales, verify compliance, and inspect live payout distributions.")
 
     from agent.settle import settle
 
@@ -313,22 +242,6 @@ def render_live_simulator() -> None:
             horizontal=True,
         )
 
-        override_enabled = st.checkbox("Apply Manager Override (Secondary Market Governance)")
-        override_royalty_bps = None
-        override_rationale = ""
-        if override_enabled:
-            override_royalty_bps = st.number_input(
-                "Override Royalty BPS (Must be >= floor)",
-                min_value=0,
-                max_value=10000,
-                value=target_art.get("royalty_bps", 1000),
-                step=50,
-            )
-            override_rationale = st.text_input(
-                "Governance Rationale (Min 15 chars)",
-                value="Authorized fiduciary estate consensus override protocol",
-            )
-
         submit_pressed = False
         settle_request: dict[str, Any] = {}
         default_bid_minor = 1000000 if selected_art_id == "HFA-101" else target_art.get("reserve", {}).get("amount_minor", 1000000)
@@ -345,7 +258,7 @@ def render_live_simulator() -> None:
                 "Transaction Nonce (Anti-Replay)",
                 value=f"sim-tx-{selected_art_id.lower()}-live",
             )
-            submit_pressed = st.button("Execute Settlement Through MeTTa", type="primary", use_container_width=True)
+            submit_pressed = st.button("Execute Settlement Through MeTTa", type="primary", width="stretch")
 
             if submit_pressed:
                 settle_request = {
@@ -354,11 +267,6 @@ def render_live_simulator() -> None:
                     "currency": default_currency,
                     "nonce": nonce_val,
                 }
-                if override_enabled:
-                    settle_request["override"] = {
-                        "royalty_bps": int(override_royalty_bps),
-                        "rationale": override_rationale,
-                    }
         else:
             default_bid_major, _ = divmod(default_bid_minor, 100)
             bid_text = st.text_area(
@@ -366,18 +274,13 @@ def render_live_simulator() -> None:
                 value=f"Offer ${default_bid_major:,} for {selected_art_id}",
             )
             nl_nonce = st.text_input("Transaction Nonce", value=f"nl-tx-{selected_art_id.lower()}-live")
-            submit_pressed = st.button("Parse & Settle via Hyperon", type="primary", use_container_width=True)
+            submit_pressed = st.button("Parse & Settle via Hyperon", type="primary", width="stretch")
 
             if submit_pressed:
                 settle_request = {
                     "text": bid_text,
                     "nonce": nl_nonce,
                 }
-                if override_enabled:
-                    settle_request["override"] = {
-                        "royalty_bps": int(override_royalty_bps),
-                        "rationale": override_rationale,
-                    }
 
     with col_info:
         st.markdown("#### Target Asset Metadata")
@@ -386,11 +289,12 @@ def render_live_simulator() -> None:
         st.markdown(f"**Status:** `{target_art.get('status')}`")
         res_amt = target_art.get("reserve", {}).get("amount_minor", 0)
         res_curr = target_art.get("reserve", {}).get("currency", "USD")
-        st.markdown(f"**Reserve Floor:** `{format_currency(res_amt, res_curr)}`")
-        st.markdown(f"**Royalty Baseline:** `{target_art.get('royalty_bps', 0)} bps` (Floor: `{target_art.get('royalty_floor_bps', 0)} bps`)")
+        st.markdown(f"**Reserve Floor:** `{format_money_dual(res_amt, res_curr)}`")
+        st.markdown(f"**Royalty Baseline:** `{target_art.get('royalty_bps', 0)} bps` (Contractual Floor: `{target_art.get('royalty_floor_bps', 0)} bps`)")
         st.markdown(f"**Community Cut:** `{target_art.get('community_bps', 0)} bps`")
         st.markdown(f"**Platform Fee:** `{target_art.get('platform_fee_bps', 0)} bps`")
 
+    # Settlement Execution Results
     if submit_pressed and settle_request:
         st.markdown("---")
         st.markdown("### Execution Result")
@@ -402,25 +306,228 @@ def render_live_simulator() -> None:
                 res_layer = res_proof.get("producing_layer")
 
                 if res_status == "APPROVED":
-                    st.success(f"**SETTLEMENT APPROVED** &mdash; Reason: {res_code or 'Compliant'} &nbsp;|&nbsp; Layer: `{res_layer}`")
+                    st.success(f"**SETTLEMENT APPROVED** &mdash; Reason: {res_code or 'Compliant Resale'} &nbsp;|&nbsp; Producing Layer: `{res_layer}`")
                 else:
-                    st.error(f"**SETTLEMENT REJECTED** &mdash; Reason: `{res_code}` &nbsp;|&nbsp; Layer: `{res_layer}`")
+                    st.error(f"**SETTLEMENT REJECTED** &mdash; Reason: `{res_code}` &nbsp;|&nbsp; Producing Layer: `{res_layer}`")
 
                 res_curr = res_proof.get("currency", default_currency)
-                c1, c2, c3 = st.columns(3)
-                c1.metric("Gross Bid", format_currency(res_proof.get("gross", 0), res_curr))
-                c2.metric("Platform Fee", format_currency(res_proof.get("fee", 0), res_curr))
-                c3.metric("Distributable Pool", format_currency(res_proof.get("pool", 0), res_curr))
 
-                c4, c5, c6 = st.columns(3)
-                c4.metric("Artist Royalty", format_currency(res_proof.get("artist", 0), res_curr))
-                c5.metric("Community Cut", format_currency(res_proof.get("community", 0), res_curr))
-                c6.metric("Swept Dust", format_currency(res_proof.get("dust", 0), res_curr))
+                # Executive 4-Metric Grid (The Curator's Vital Signs)
+                st.markdown("#### Executive Payout Allocation")
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("Gross Sale Price", format_money_dual(res_proof.get("gross", 0), res_curr))
+                c2.metric("Artist Royalty (Droit de Suite)", format_money_dual(res_proof.get("artist", 0), res_curr))
+                c3.metric("Community Preservation Fund", format_money_dual(res_proof.get("community", 0), res_curr))
+                c4.metric("Fractional Net Pool", format_money_dual(res_proof.get("pool", 0), res_curr))
+
+                # Secondary splits
+                s1, s2 = st.columns(2)
+                s1.metric("Platform Fee", format_money_dual(res_proof.get("fee", 0), res_curr))
+                s2.metric("Swept Dust", format_money_dual(res_proof.get("dust", 0), res_curr))
+
+                # Fractional co-owners table
+                coowners = res_proof.get("coowners", [])
+                if coowners:
+                    st.markdown("#### Fractional Co-Owner Disbursements")
+                    table_rows = []
+                    for c in coowners:
+                        table_rows.append(
+                            {
+                                "Co-Owner": c.get("owner"),
+                                "Wallet Address": c.get("wallet"),
+                                "Disbursed Amount": format_money_dual(c.get("amount", 0), res_curr),
+                            }
+                        )
+                    st.table(table_rows)
 
                 with st.expander("Raw proof", expanded=False):
                     st.json(res_proof)
             except Exception as e:
                 st.error(f"Settlement failed closed with runtime error: {e}")
+
+    # Secondary / Benchmarks Expander
+    st.markdown("---")
+    with st.expander("Stress-Test & Cross-Border Benchmarks", expanded=False):
+        st.markdown("#### Pre-Computed Canonical Proof Benchmarks")
+        st.caption("Inspect verification fixtures (TEST-DUST, TEST-KES, TEST-FEE, below reserve, duplicate nonce).")
+
+        fixture_keys = list(fixtures.keys())
+        sc_selected_key = st.selectbox(
+            "Select Benchmark Scenario Fixture",
+            fixture_keys,
+            format_func=lambda k: f"{k.replace('.json', '').replace('_', ' ').upper()}",
+            index=0,
+            key="benchmark_fixture_selector",
+        )
+
+        sc_proof = fixtures[sc_selected_key]
+        sc_status = sc_proof.get("status", "UNKNOWN")
+        sc_reason_code = sc_proof.get("reason_code")
+        sc_producing_layer = sc_proof.get("producing_layer", "unknown")
+        sc_currency = sc_proof.get("currency", "USD")
+
+        if sc_status == "APPROVED":
+            st.markdown(f'<div class="verdict-approved">&#x2714; VERDICT: APPROVED (Compliant Resale) &nbsp;|&nbsp; Producing Layer: <code>{sc_producing_layer}</code></div>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div class="verdict-rejected">&#x2716; VERDICT: REJECTED &mdash; {sc_reason_code} &nbsp;|&nbsp; Producing Layer: <code>{sc_producing_layer}</code></div>', unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        bc1, bc2, bc3, bc4 = st.columns(4)
+        bc1.metric("Gross Amount", format_money_dual(sc_proof.get("gross", 0), sc_currency))
+        bc2.metric("Artist Royalty", format_money_dual(sc_proof.get("artist", 0), sc_currency))
+        bc3.metric("Community Fund", format_money_dual(sc_proof.get("community", 0), sc_currency))
+        bc4.metric("Fractional Net Pool", format_money_dual(sc_proof.get("pool", 0), sc_currency))
+
+        sc_coowners = sc_proof.get("coowners", [])
+        if sc_coowners:
+            st.markdown("**Disbursements:**")
+            sc_table_rows = [
+                {
+                    "Co-Owner": c.get("owner"),
+                    "Wallet Address": c.get("wallet"),
+                    "Disbursed Amount": format_money_dual(c.get("amount", 0), sc_currency),
+                }
+                for c in sc_coowners
+            ]
+            st.table(sc_table_rows)
+
+        with st.expander("Raw proof", expanded=False):
+            st.json(sc_proof)
+
+
+def render_manager_override() -> None:
+    st.markdown("### Fiduciary Manager Governance Console")
+    st.caption("Governance portal: Apply transparent secondary market overrides strictly bounded by statutory floor covenants.")
+
+    from agent.settle import settle
+
+    st.info(
+        "🛡️ **Fiduciary Governance Guardrail:** Secondary market overrides are evaluated directly by MeTTa symbolic invariants. "
+        "Royalty adjustments may only increase artist or community allocations and must strictly respect the contractual "
+        "floor (1,000 bps / 10.00%). Violations are fail-closed and strictly rejected by MeTTa."
+    )
+
+    artworks = load_artworks()
+    artwork_map = {art["artwork_id"]: art for art in artworks}
+    artwork_options = list(artwork_map.keys())
+
+    col_form, col_info = st.columns([3, 2])
+
+    with col_form:
+        default_art_index = artwork_options.index("HFA-101") if "HFA-101" in artwork_options else 0
+        selected_art_id = st.selectbox(
+            "Target Artwork for Governance Action",
+            artwork_options,
+            index=default_art_index,
+            format_func=lambda aid: f"{aid} - {artwork_map[aid].get('title', '')}",
+            key="override_art_selector",
+        )
+        target_art = artwork_map[selected_art_id]
+        currency = target_art.get("reserve", {}).get("currency", "USD")
+
+        current_bps = target_art.get("royalty_bps", 1000)
+        floor_bps = target_art.get("royalty_floor_bps", 1000)
+
+        override_royalty_bps = st.number_input(
+            f"Proposed Royalty Rate in BPS (Must be >= floor {floor_bps} bps)",
+            min_value=floor_bps,
+            max_value=10000,
+            value=max(current_bps, floor_bps + 500),
+            step=50,
+        )
+
+        override_rationale = st.text_area(
+            "Mandatory Fiduciary Governance Rationale (Min 15 chars)",
+            value="Authorized fiduciary estate consensus override protocol",
+        )
+
+        override_nonce = st.text_input(
+            "Governance Nonce (Anti-Replay)",
+            value=f"gov-override-{selected_art_id.lower()}-v1",
+        )
+
+        override_gross_minor = st.number_input(
+            f"Gross Settlement Amount in Minor Units ({currency} Cents)",
+            min_value=1,
+            max_value=1000000000,
+            value=1000000 if selected_art_id == "HFA-101" else target_art.get("reserve", {}).get("amount_minor", 1000000),
+            step=10000,
+            key="override_gross_input",
+        )
+
+        submit_override = st.button("Submit Fiduciary Override to MeTTa", type="primary", width="stretch")
+
+    with col_info:
+        st.markdown("#### Contractual Covenants & Invariant Bounds")
+        st.markdown(f"**Asset:** `{selected_art_id}` &mdash; {target_art.get('title')}")
+        st.markdown(f"**Creator:** {target_art.get('creator_name')} ({target_art.get('creator_wallet')})")
+        st.markdown(f"**Status:** `{target_art.get('status')}`")
+        res_amt = target_art.get("reserve", {}).get("amount_minor", 0)
+        st.markdown(f"**Reserve Floor:** `{format_money_dual(res_amt, currency)}`")
+        st.markdown(f"**Statutory Floor Covenant:** `{floor_bps} bps`")
+        st.markdown(f"**Current Baseline Royalty:** `{current_bps} bps`")
+        st.markdown(f"**Proposed Override Royalty:** `{override_royalty_bps} bps`")
+
+        if override_royalty_bps < floor_bps:
+            st.error(f"Invariant Violation: Proposed rate ({override_royalty_bps} bps) is below floor ({floor_bps} bps).")
+        else:
+            st.success(f"Compliant Proposal: Proposed rate ({override_royalty_bps} bps) satisfies floor covenant.")
+
+    if submit_override:
+        st.markdown("---")
+        st.markdown("### Governance Execution Verdict")
+        if len(override_rationale.strip()) < 15:
+            st.error("Rejection: Governance rationale must be at least 15 characters.")
+            return
+
+        settle_request = {
+            "artwork_id": selected_art_id,
+            "gross_minor": int(override_gross_minor),
+            "currency": currency,
+            "nonce": override_nonce,
+            "override": {
+                "royalty_bps": int(override_royalty_bps),
+                "rationale": override_rationale,
+            },
+        }
+
+        with st.spinner("Submitting override to MeTTa invariant kernel..."):
+            try:
+                res_proof = settle(settle_request)
+                res_status = res_proof.get("status")
+                res_code = res_proof.get("reason_code")
+                res_layer = res_proof.get("producing_layer")
+
+                if res_status == "APPROVED":
+                    st.success(f"**OVERRIDE APPROVED** &mdash; Reason: {res_code or 'Compliant Floor Bound'} &nbsp;|&nbsp; Producing Layer: `{res_layer}`")
+                else:
+                    st.error(f"**OVERRIDE REJECTED** &mdash; Reason: `{res_code}` &nbsp;|&nbsp; Producing Layer: `{res_layer}`")
+
+                res_curr = res_proof.get("currency", currency)
+
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("Gross Sale Price", format_money_dual(res_proof.get("gross", 0), res_curr))
+                c2.metric("Elevated Artist Royalty", format_money_dual(res_proof.get("artist", 0), res_curr))
+                c3.metric("Community Fund", format_money_dual(res_proof.get("community", 0), res_curr))
+                c4.metric("Fractional Net Pool", format_money_dual(res_proof.get("pool", 0), res_curr))
+
+                coowners = res_proof.get("coowners", [])
+                if coowners:
+                    st.markdown("#### Adjusted Co-Owner Disbursements")
+                    table_rows = [
+                        {
+                            "Co-Owner": c.get("owner"),
+                            "Wallet Address": c.get("wallet"),
+                            "Disbursed Amount": format_money_dual(c.get("amount", 0), res_curr),
+                        }
+                        for c in coowners
+                    ]
+                    st.table(table_rows)
+
+                with st.expander("Raw proof", expanded=False):
+                    st.json(res_proof)
+            except Exception as e:
+                st.error(f"Governance execution failed closed: {e}")
 
 
 def render_registry_view() -> None:
@@ -446,14 +553,14 @@ def render_registry_view() -> None:
             with col1:
                 st.markdown("**Covenants:**")
                 res = art.get("reserve", {})
-                st.write(f"- Reserve Price: `{format_currency(res.get('amount_minor', 0), res.get('currency', 'USD'))}`")
+                st.write(f"- Reserve Price: `{format_money_dual(res.get('amount_minor', 0), res.get('currency', 'USD'))}`")
                 st.write(f"- Artist Royalty: `{art.get('royalty_bps', 0)} bps` (Contractual Floor: `{art.get('royalty_floor_bps', 0)} bps`)")
                 st.write(f"- Community Preservation: `{art.get('community_bps', 0)} bps`")
                 st.write(f"- Platform Fee: `{art.get('platform_fee_bps', 0)} bps`")
             with col2:
                 st.markdown("**Cap Table:**")
                 cap_table = art.get("cap_table", [])
-                st.dataframe(cap_table, use_container_width=True)
+                st.dataframe(cap_table, width="stretch")
 
 
 def render_audit_trail() -> None:
@@ -462,7 +569,7 @@ def render_audit_trail() -> None:
 
     entries = load_audit_log()
     if not entries:
-        st.info("No audit log records found. Execute a transaction in the Live Simulator to generate an entry.")
+        st.info("No audit log records found. Execute a transaction in Marketplace Settlement to generate an entry.")
         return
 
     st.markdown(f"**Total Hash-Chained Commitments:** `{len(entries)}`")
@@ -481,17 +588,19 @@ def render_audit_trail() -> None:
                     <b>PREV:</b> {item.get('prev_hash')}
                 </div>
                 <div style="margin-top: 0.5rem; font-size: 0.85rem;">
-                    Status: <b>{status}</b> &nbsp;|&nbsp; Artwork: <code>{proof_data.get('artwork_id')}</code> &nbsp;|&nbsp; Gross: <code>{format_currency(proof_data.get('gross', 0), proof_data.get('currency', 'USD'))}</code>
+                    Status: <b>{status}</b> &nbsp;|&nbsp; Artwork: <code>{proof_data.get('artwork_id')}</code> &nbsp;|&nbsp; Gross: <code>{format_money_dual(proof_data.get('gross', 0), proof_data.get('currency', 'USD'))}</code>
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
+        with st.expander("Raw proof", expanded=False):
+            st.json(proof_data)
 
 
 def main():
     st.set_page_config(
-        page_title="TrustGate: Fractional Approval Agent",
+        page_title="HFAS #BuyBlackArt — Fractional Approval Agent",
         page_icon="🛡️",
         layout="wide",
         initial_sidebar_state="expanded",
@@ -506,20 +615,20 @@ def main():
         return
 
     tab1, tab2, tab3, tab4 = st.tabs([
-        "Proof Inspector",
-        "Live Simulator",
-        "Artwork Registry",
-        "Audit Trail",
+        "Marketplace Settlement",
+        "Fiduciary Manager Override",
+        "Immutable Audit Log",
+        "Artwork & Cap Table Registry",
     ])
 
     with tab1:
-        render_scenario_inspector(fixtures)
+        render_marketplace_settlement(fixtures)
     with tab2:
-        render_live_simulator()
+        render_manager_override()
     with tab3:
-        render_registry_view()
-    with tab4:
         render_audit_trail()
+    with tab4:
+        render_registry_view()
 
 
 if __name__ == "__main__":
