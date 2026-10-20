@@ -379,14 +379,34 @@ The workflow file is committed at `.github/workflows/ci.yml`.
   - Validates `settle()` against canonical proof fixtures for SC-01 through SC-06 and SC-10 through SC-12.
   - Covers invalid amount types, unknown artworks, multiple/missing override fields, short rationales, and MeTTa-driven override rejections.
   - Implements AST source-scan test `test_no_money_math_in_settle_py` asserting zero binary arithmetic on financial fields in `agent/settle.py`.
-- **Full Test Suite Status:** **69 passed, 12 xfailed in 11.76s**.
+### 13. Audit Log, Ledger, Nonce & Offline Parser Wiring (Task 2.5b: VERIFIED)
+- **Component Wiring & Dependency Inversion (`agent/settle.py`):**
+  - Wired `settle(request, offline=True, parser=None, audit=None, ledger=None)` with lazy imports of default modules (`agent.audit_log`, `agent.ledger`, `agent.parser`) when not explicitly injected.
+  - Fail-closed handling for stubs or components raising `NotImplementedError` or exceptions, propagating error details in an explicit `diagnostics` field without silent swallowing.
+  - Enforced mandatory `nonce` parameter when audit component is active, failing closed with `INVALID_AMOUNT` if missing.
+- **Nonce Replay Defense (SC-07):**
+  - Intercepts duplicate nonces via `audit.seen_nonce(nonce)` before invoking the symbolic reasoning bridge.
+  - Halts execution with `status: "REJECTED"` and `reason_code: "DUPLICATE_NONCE"`, leaves the double-entry ledger untouched, and appends the rejection record to the audit log.
+- **Symbolic & Engine Fail-Closed Rejections (SC-08):**
+  - Catches unmapped assets or empty atom sets, returning `status: "REJECTED"` and `reason_code: "ENGINE_UNAVAILABLE"` with zero money movements and logging the event to the audit trail.
+- **Offline Natural Language Parsing (SC-09):**
+  - Accepts unstructured bid text (`request["text"]`) and routes through `parser.parse_request(text)`.
+  - Emits `status: "APPROVED"` with `producing_layer: "parser"` when valid, and fails closed with `status: "REJECTED"` and `reason_code: "LLM_MALFORMED_OUTPUT"` if parsing encounters ambiguity or malformed syntax.
+- **Strict Execution Order & Invariants:**
+  - For `APPROVED` transactions: commits to `audit.append(proof, nonce)` first, then posts balanced journals to `ledger.post(proof, nonce)`. If audit append raises, ledger posting is aborted and execution fails closed.
+  - For `REJECTED` transactions: commits rejection proof to `audit.append()`; double-entry ledger is never touched.
+  - Zero money math: `settle()` performs zero arithmetic operations on financial amounts, copying all values verbatim from the MeTTa bridge proof atom.
+- **Test Suite Expansion (`tests/test_settle.py`):**
+  - Added in-memory test doubles `FakeAuditLog`, `FakeLedger`, and `FakeParser` validating exact call ordering, fail-closed exception handling, and nonce requirements.
+  - Added `test_real_modules_end_to_end_xfail` testing live integration against real module imports, marked `xfail` until teammates' branches merge into `main`.
+- **Full Test Suite Status:** **78 passed, 13 xfailed in 13.02s**.
 
 ---
 
 ## Next Steps & Roadmap
 
-1. **Open Pull Request for Override Wiring 2.5:**
-   - Merge `agent/2.5-override-wiring` into `main` after review.
+1. **Open Pull Request for Settle Wiring 2.5b:**
+   - Merge `agent/2.5b-settle-wiring` into `main` after review.
 2. **Launch Teammate Sprint Branches (via `docs/ISSUES_TO_CREATE.md` & `docs/TEAM_PROMPTS.md`):**
    - Teammate 1: `agent/2.4-audit-log` (hash-chained audit log & nonce replay defense), then `agent/2.6-sim-ledger` (simulated double-entry ledger in integer cents).
    - Teammate 2: `parser/3.1-rule-parser` (rule-based NLP parser & prompt injection defense), then `docs/7.3-readme-disclosure` (final README and AI disclosure).
