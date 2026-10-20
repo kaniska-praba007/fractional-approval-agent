@@ -28,6 +28,10 @@ def _validate_proof(proof: dict) -> None:
     if not isinstance(proof.get("status"), str):
         raise ValueError("INVALID_PROOF")
 
+    currency = proof.get("currency")
+    if not isinstance(currency, str) or not currency.strip():
+        raise ValueError("INVALID_PROOF")
+
     coowners = proof.get("coowners", [])
     if not isinstance(coowners, list):
         raise ValueError("INVALID_PROOF")
@@ -42,25 +46,47 @@ def _validate_proof(proof: dict) -> None:
 
 
 def _make_entries(proof: dict) -> list[dict]:
-    """Copy authoritative proof amounts into signed ledger entries."""
-    entries = [{"account": "buyer_receivable", "amount": -proof["gross"]}]
+    """Copy proof amounts and currency into ledger entries."""
+    currency = proof["currency"]
+
+    entries = [
+        {
+            "account": "buyer_receivable",
+            "amount": -proof["gross"],
+            "currency": currency,
+        }
+    ]
 
     if proof["fee"]:
         entries.append({
             "account": "platform_fee",
             "amount": proof["fee"],
+            "currency": currency,
         })
 
-    entries.append({"account": "artist", "amount": proof["artist"]})
+    entries.append({
+        "account": "artist",
+        "amount": proof["artist"],
+        "currency": currency,
+    })
+
+    # Keep community and dust separate; do not add money values.
     entries.append({
         "account": "community_fund",
-        "amount": proof["community"] + proof["dust"],
+        "amount": proof["community"],
+        "currency": currency,
+    })
+    entries.append({
+        "account": "community_fund",
+        "amount": proof["dust"],
+        "currency": currency,
     })
 
     for coowner in proof.get("coowners", []):
         entries.append({
             "account": coowner["owner"],
             "amount": coowner["amount"],
+            "currency": currency,
         })
 
     if sum(entry["amount"] for entry in entries) != 0:
@@ -110,7 +136,7 @@ def post(proof: dict, nonce: str | None = None) -> dict:
 
 
 def balances() -> dict[str, int]:
-    """Return each account's signed net balance."""
+    """Return each account's signed net balance (existing API)."""
     with _LOCK:
         result: dict[str, int] = {}
         for entry in _ENTRIES:
@@ -119,33 +145,68 @@ def balances() -> dict[str, int]:
         return result
 
 
-def verify() -> bool:
-    """Verify ledger structure, balances, and nonce uniqueness."""
+def balances_by_currency() -> dict[str, dict[str, int]]:
+    """Return signed account balances grouped by currency."""
     with _LOCK:
+        result: dict[str, dict[str, int]] = {}
+        for entry in _ENTRIES:
+            currency = entry["currency"]
+            account = entry["account"]
+            currency_balances = result.setdefault(currency, {})
+            currency_balances[account] = (
+                currency_balances.get(account, 0) + entry["amount"]
+            )
+        return result
+
+
+def reset() -> None:
+    """Clear entries, transactions, and replay-protection nonces."""
+    with _LOCK:
+        _ENTRIES.clear()
+        _TRANSACTIONS.clear()
+        _NONCES.clear()
+
+
+def verify() -> bool:
+    """Verify ledger structure, currencies, balances, and nonce uniqueness."""
+    with _LOCK:
+        # An untouched, empty ledger is valid.
         if not _TRANSACTIONS:
-            return False
+            return not _ENTRIES and not _NONCES
 
         seen: set[str] = set()
         all_entries: list[dict] = []
 
         for transaction in _TRANSACTIONS:
-            nonce = transaction["nonce"]
+            if not isinstance(transaction, dict):
+                return False
+
+            nonce = transaction.get("nonce")
             if nonce is not None:
-                if nonce in seen:
+                if not isinstance(nonce, str) or nonce in seen:
                     return False
                 seen.add(nonce)
 
-            entries = transaction["entries"]
+            entries = transaction.get("entries")
             if not isinstance(entries, list) or not entries:
                 return False
 
-            if any(
-                not isinstance(entry, dict)
-                or not isinstance(entry.get("account"), str)
-                or not _amount(entry.get("amount"))
-                for entry in entries
-            ):
+            proof = transaction.get("proof")
+            if not isinstance(proof, dict):
                 return False
+
+            currency = proof.get("currency")
+            if not isinstance(currency, str) or not currency.strip():
+                return False
+
+            for entry in entries:
+                if (
+                    not isinstance(entry, dict)
+                    or not isinstance(entry.get("account"), str)
+                    or not _amount(entry.get("amount"))
+                    or entry.get("currency") != currency
+                ):
+                    return False
 
             if sum(entry["amount"] for entry in entries) != 0:
                 return False

@@ -19,13 +19,9 @@ def load_fixture(name: str) -> dict:
 
 @pytest.fixture(autouse=True)
 def isolated_ledger():
-    ledger._ENTRIES.clear()
-    ledger._TRANSACTIONS.clear()
-    ledger._NONCES.clear()
+    ledger.reset()
     yield
-    ledger._ENTRIES.clear()
-    ledger._TRANSACTIONS.clear()
-    ledger._NONCES.clear()
+    ledger.reset()
 
 
 def test_sc01_balances_match_fixture():
@@ -33,13 +29,16 @@ def test_sc01_balances_match_fixture():
     receipt = post(sc01, nonce="nonce-sc01-ledger")
 
     assert receipt["status"] == "POSTED"
+
     result = balances()
     assert result.get("artist", 0) == sc01["artist"]
     assert result.get("community_fund", 0) == (
         sc01["community"] + sc01["dust"]
     )
+
     for coowner in sc01["coowners"]:
         assert result.get(coowner["owner"], 0) == coowner["amount"]
+
     assert verify() is True
 
 
@@ -51,7 +50,7 @@ def test_sc02_rejected_posts_nothing():
 
     assert receipt["status"] == "REJECTED"
     assert balances() == before
-    assert verify() is False
+    assert verify() is True
 
 
 def test_sc06_dust_goes_to_community_fund():
@@ -77,8 +76,8 @@ def test_replayed_nonce_does_not_change_balances():
     assert verify() is True
 
 
-def test_empty_ledger_is_not_verified():
-    assert verify() is False
+def test_empty_ledger_is_verified():
+    assert verify() is True
 
 
 def test_float_amount_is_rejected():
@@ -87,3 +86,44 @@ def test_float_amount_is_rejected():
 
     with pytest.raises(ValueError, match="INVALID_AMOUNT"):
         post(proof, nonce="nonce-float")
+
+
+def test_balances_are_separated_by_currency():
+    usd = load_fixture("sc01_standard_resale.json")
+    kes = load_fixture("sc11_kes_currency.json")
+
+    post(usd, nonce="nonce-usd")
+    post(kes, nonce="nonce-kes")
+
+    result = ledger.balances_by_currency()
+
+    assert "USD" in result
+    assert "KES" in result
+    assert result["USD"].get("artist", 0) == usd["artist"]
+    assert result["KES"].get("artist", 0) == kes["artist"]
+
+
+def test_sc06_dust_is_a_separate_ledger_entry():
+    sc06 = load_fixture("sc06_dust_split.json")
+    post(sc06, nonce="nonce-sc06-separate-dust")
+
+    community_entries = [
+        entry
+        for entry in ledger._ENTRIES
+        if entry.get("account") == "community_fund"
+    ]
+
+    assert len(community_entries) == 2
+    assert balances().get("community_fund", 0) == 1
+
+
+def test_reset_clears_ledger():
+    sc01 = load_fixture("sc01_standard_resale.json")
+    post(sc01, nonce="nonce-reset")
+
+    ledger.reset()
+
+    assert ledger._ENTRIES == []
+    assert ledger._TRANSACTIONS == []
+    assert ledger._NONCES == set()
+    assert verify() is True
