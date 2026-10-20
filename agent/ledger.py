@@ -1,88 +1,155 @@
-"""Simulated double-entry ledger in integer cents.
 
-CRITICAL INVARIANT (AGENTS.md & docs/PROOF_SHAPE.md):
-- The ledger COPIES amounts from the authoritative proof atom and only checks
-  that debit and credit entries sum to zero.
-- It performs NO settlement calculation and NO money maths.
-- All amounts are strictly integer minor units (cents).
-- Rejected proofs post nothing.
-- Replayed nonces are rejected without modifying ledger balances.
-
-Double-entry bookkeeping convention:
-  Debits: Buyer / Escrow Receivable (gross amount)
-  Credits:
-    - Platform Fee Account
-    - Artist Royalty Account
-    - Community Fund Account (base community cut + dust)
-    - Co-owner Accounts (each fractional owner's share)
-  Total debits == Total credits. Sum of signed entries == 0.
-
-Example Usage:
->>> proof = {
-...     "status": "APPROVED",
-...     "artwork_id": "HFA-101",
-...     "currency": "USD",
-...     "gross": 1000000,
-...     "fee": 0,
-...     "artist": 150000,
-...     "community": 30000,
-...     "dust": 0,
-...     "pool": 820000,
-...     "coowners": [
-...         {"owner": "alice", "wallet": "0xalice", "amount": 492000},
-...         {"owner": "bob", "wallet": "0xbob", "amount": 328000}
-...     ]
-... }
->>> post(proof)
-{'transaction_id': 'tx-1', 'status': 'POSTED', 'entries_count': 5}
->>> balances()
-{'buyer_receivable': -1000000, 'artist_0xartist101': 150000, 'community_fund': 30000, 'alice': 492000, 'bob': 328000}
->>> verify()
-True
-"""
+"""Simulated double-entry ledger using integer minor units only."""
 from __future__ import annotations
+
+from copy import deepcopy
+from threading import RLock
+
+
+_LOCK = RLock()
+_ENTRIES: list[dict] = []
+_TRANSACTIONS: list[dict] = []
+_NONCES: set[str] = set()
+
+
+def _amount(value) -> bool:
+    """Accept integer minor units, never booleans or floats."""
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _validate_proof(proof: dict) -> None:
+    if not isinstance(proof, dict):
+        raise ValueError("INVALID_PROOF")
+
+    for field in ("gross", "fee", "artist", "community", "dust", "pool"):
+        if field not in proof or not _amount(proof[field]) or proof[field] < 0:
+            raise ValueError("INVALID_AMOUNT")
+
+    if not isinstance(proof.get("status"), str):
+        raise ValueError("INVALID_PROOF")
+
+    coowners = proof.get("coowners", [])
+    if not isinstance(coowners, list):
+        raise ValueError("INVALID_PROOF")
+
+    for owner in coowners:
+        if not isinstance(owner, dict):
+            raise ValueError("INVALID_PROOF")
+        if not isinstance(owner.get("owner"), str) or not owner["owner"]:
+            raise ValueError("INVALID_PROOF")
+        if not _amount(owner.get("amount")) or owner["amount"] < 0:
+            raise ValueError("INVALID_AMOUNT")
+
+
+def _make_entries(proof: dict) -> list[dict]:
+    """Copy authoritative proof amounts into signed ledger entries."""
+    entries = [{"account": "buyer_receivable", "amount": -proof["gross"]}]
+
+    if proof["fee"]:
+        entries.append({
+            "account": "platform_fee",
+            "amount": proof["fee"],
+        })
+
+    entries.append({"account": "artist", "amount": proof["artist"]})
+    entries.append({
+        "account": "community_fund",
+        "amount": proof["community"] + proof["dust"],
+    })
+
+    for coowner in proof.get("coowners", []):
+        entries.append({
+            "account": coowner["owner"],
+            "amount": coowner["amount"],
+        })
+
+    if sum(entry["amount"] for entry in entries) != 0:
+        raise ValueError("UNBALANCED_TRANSACTION")
+
+    return entries
 
 
 def post(proof: dict, nonce: str | None = None) -> dict:
-    """Post an approved settlement proof to the simulated double-entry ledger.
+    """Post an approved proof without recalculating settlement amounts."""
+    _validate_proof(proof)
 
-    Copies amounts verbatim from the proof without recomputing payouts.
-    Validates that total debits equal total credits (sum to zero).
-    If proof status is 'REJECTED', posts nothing.
+    with _LOCK:
+        if proof["status"] != "APPROVED":
+            return {
+                "transaction_id": None,
+                "status": "REJECTED",
+                "entries_count": 0,
+            }
 
-    Args:
-        proof: Canonical proof dictionary matching docs/PROOF_SHAPE.md.
-        nonce: Optional unique transaction identifier to prevent replay.
+        if nonce is not None:
+            if not isinstance(nonce, str) or not nonce.strip():
+                raise ValueError("INVALID_NONCE")
+            if nonce in _NONCES:
+                raise ValueError("DUPLICATE_NONCE")
 
-    Returns:
-        Ledger posting transaction receipt with transaction ID and entry count.
+        entries = _make_entries(proof)
+        transaction_id = f"tx-{len(_TRANSACTIONS) + 1}"
 
-    Raises:
-        ValueError: If entries do not sum to zero or nonce is duplicated.
-        NotImplementedError: Stub implementation for scaffold/0.5.
-    """
-    raise NotImplementedError("Ledger post not implemented yet (owned by agent/2.6-sim-ledger)")
+        transaction = {
+            "transaction_id": transaction_id,
+            "nonce": nonce,
+            "proof": deepcopy(proof),
+            "entries": deepcopy(entries),
+        }
+
+        _ENTRIES.extend(deepcopy(entries))
+        _TRANSACTIONS.append(transaction)
+        if nonce is not None:
+            _NONCES.add(nonce)
+
+        return {
+            "transaction_id": transaction_id,
+            "status": "POSTED",
+            "entries_count": len(entries),
+        }
 
 
 def balances() -> dict[str, int]:
-    """Retrieve current account balances in integer minor units (cents).
-
-    Returns:
-        Mapping of account identifier to net balance integer in minor units.
-
-    Raises:
-        NotImplementedError: Stub implementation for scaffold/0.5.
-    """
-    raise NotImplementedError("Ledger balances not implemented yet (owned by agent/2.6-sim-ledger)")
+    """Return each account's signed net balance."""
+    with _LOCK:
+        result: dict[str, int] = {}
+        for entry in _ENTRIES:
+            account = entry["account"]
+            result[account] = result.get(account, 0) + entry["amount"]
+        return result
 
 
 def verify() -> bool:
-    """Verify that all ledger transactions are balanced and sum to zero.
+    """Verify ledger structure, balances, and nonce uniqueness."""
+    with _LOCK:
+        if not _TRANSACTIONS:
+            return False
 
-    Returns:
-        True if the entire ledger satisfies double-entry conservation; False otherwise.
+        seen: set[str] = set()
+        all_entries: list[dict] = []
 
-    Raises:
-        NotImplementedError: Stub implementation for scaffold/0.5.
-    """
-    raise NotImplementedError("Ledger verify not implemented yet (owned by agent/2.6-sim-ledger)")
+        for transaction in _TRANSACTIONS:
+            nonce = transaction["nonce"]
+            if nonce is not None:
+                if nonce in seen:
+                    return False
+                seen.add(nonce)
+
+            entries = transaction["entries"]
+            if not isinstance(entries, list) or not entries:
+                return False
+
+            if any(
+                not isinstance(entry, dict)
+                or not isinstance(entry.get("account"), str)
+                or not _amount(entry.get("amount"))
+                for entry in entries
+            ):
+                return False
+
+            if sum(entry["amount"] for entry in entries) != 0:
+                return False
+
+            all_entries.extend(entries)
+
+        return all_entries == _ENTRIES and seen == _NONCES
