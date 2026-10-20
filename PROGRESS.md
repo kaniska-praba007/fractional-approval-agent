@@ -323,37 +323,63 @@ The workflow file is committed at `.github/workflows/ci.yml`.
   - Updated `docs/START_HERE.md` to link directly to `docs/FLOWS.md` with relative links.
 
 ### 10. Platform Fee Rounding & Multi-Currency Edge Cases (Task 1.5: VERIFIED)
+
 - **Edge Case Scenarios (SC-10, SC-11, SC-12):**
-  - `SC-10`: `TEST-FEE` benchmark artwork with 250 bps platform fee sold at 1,000,033 USD cents. Exercises integer floor division rounding on fee remainder (fee: 25,000 cents; net: 975,033 cents; artist: 97,503 cents; community: 19,500 cents; pool: 858,030 cents).
-  - `SC-11`: `TEST-KES` benchmark artwork denominated and transacted in Kenyan Shillings (KES). Proves rules are not USD-hardcoded; settles 1,000,000.00 KES (100,000,000 minor units).
+  - `SC-10`: `TEST-FEE` benchmark artwork with 250 bps platform fee sold at 1,000,033 USD cents. Exercises integer floor division rounding on fee remainder.
+  - `SC-11`: `TEST-KES` benchmark artwork denominated and transacted in Kenyan Shillings (KES). Proves rules are not USD-hardcoded.
   - `SC-12`: `TEST-KES` sold in USD; proves currency mismatch rejection with `UNSUPPORTED_CURRENCY` and zero disbursed payouts.
 - **Independent Test Oracle & Scenario Definitions:**
-  - Added scenario JSONs in `tests/scenarios/sc10_platform_fee.json`, `sc11_kes_currency.json`, `sc12_kes_currency_mismatch.json`.
+  - Added scenario JSONs in `tests/scenarios/sc10_platform_fee.json`, `tests/scenarios/sc11_kes_currency.json`, and `tests/scenarios/sc12_kes_currency_mismatch.json`.
   - Added independent reference calculations in `tests/test_oracle.py`.
 - **Synthetic Registry Expansion (`data/artworks.json`):**
-  - Registered `TEST-FEE` and `TEST-KES` with validated cap tables summing to 10,000 bps, integer bps, floor <= royalty covenants, and synthetic tags.
-  - Updated `tests/test_registry.py` to enforce registry business rules on the expanded asset catalog.
-- **MeTTa Rules Robustness (Zero Rule Changes Needed):**
-  - Verified that `metta/royalties.metta` required **0 modifications**. The symbolic engine's `execute-settlement` and `evaluate-resale` already supported arbitrary currencies and platform fee slots natively.
+  - Registered `TEST-FEE` and `TEST-KES` with validated cap tables and synthetic tags.
+  - Updated `tests/test_registry.py` to enforce registry business rules.
+- **MeTTa Rules Robustness:**
+  - Verified that `metta/royalties.metta` required zero modifications for these scenarios.
+  - The existing settlement rules support arbitrary currencies and platform fee slots.
 - **Multi-Asset Invariant Fuzz Testing:**
-  - Extended 200-iteration pseudo-random fuzz test in `tests/test_oracle.py` and 20-iteration fuzz test in `tests/test_bridge_settlement.py` across all registered artworks (including KES and fee assets).
-  - Verified exact monetary conservation invariant across all randomized transactions: `gross == fee + artist + community + sum(coowners) + dust`.
+  - Extended randomized tests across all registered artworks, including KES and platform-fee assets.
+  - Verified the conservation invariant:
+    `gross == fee + artist + community + sum(coowners) + dust`.
 - **Canonical Fixtures Regeneration (`tests/fixtures/proofs/`):**
-  - Generated `sc10_platform_fee.json`, `sc11_kes_currency.json`, and `sc12_kes_currency_mismatch.json` (labeled `producing_layer: "bridge/MeTTa"`).
-  - Verified that all existing fixtures `sc01..sc09` remained 100% unchanged.
+  - Generated fixtures for SC-10, SC-11, and SC-12.
+  - Verified that existing SC-01 through SC-09 fixtures remained unchanged.
 - **Documentation Updates:**
-  - Updated scenario mapping table in `docs/FLOWS.md`.
-  - Added fee and currency scope decision to `docs/DECISIONS.md`.
+  - Updated the scenario mapping in `docs/FLOWS.md`.
+  - Added the fee and currency decision to `docs/DECISIONS.md`.
   - Added `metta/1.5-edge-cases` to `docs/BRANCHES.md`.
-  - Added currency string and minor units note to `docs/PROOF_SHAPE.md`.
+  - Updated `docs/PROOF_SHAPE.md` with currency and minor-unit details.
 - **Full Test Suite Status:** **51 passed, 12 xfailed in 15.93s**.
+
+### 11. Context Precedence & Document Alignment (Docs 0.7: VERIFIED)
+
+- **Authoritative Precedence Notice (`docs/CONTEXT.md`):**
+  - Added a top-level notice resolving conflicts between early blueprint documentation and executable specifications.
+  - Established that `docs/PROOF_SHAPE.md`, `docs/DECISIONS.md`, and `metta/royalties.metta` take precedence where they disagree with `docs/CONTEXT.md`.
+  - Documented known differences involving platform fees, rejection syntax, terminal statuses, and standardized reason codes.
+- **Test File Naming Verification:**
+  - Audited test references across `docs/TEAM_PROMPTS.md` and `docs/BRANCHES.md`.
+  - Confirmed naming alignment for `tests/test_audit.py`, `tests/test_parser.py`, and `tests/test_ledger.py`.
 
 ---
 
 ## Next Steps & Roadmap
 
-1. **Open Pull Request for Edge Cases 1.5:**
-   - Merge `metta/1.5-edge-cases` into `main` after review.
+1. **Open Pull Requests for Edge Cases 1.5 and Docs 0.7:**
+   - Review and merge `metta/1.5-edge-cases` into `main`.
+   - Review and merge `docs/0.7-context-note` into `main`.
+2. **Launch Teammate Sprint Branches (via `docs/ISSUES_TO_CREATE.md` & `docs/TEAM_PROMPTS.md`):**
+   - Teammate 1: `agent/2.4-audit-log` (hash-chained audit log & nonce replay defense).
+   - Teammate 2: `parser/3.1-rule-parser` (rule-based NLP parser & prompt injection defense).
+   - Teammate 3: `agent/2.6-sim-ledger` (simulated double-entry ledger in integer cents).
+   - Teammate 4: `ui/6.1-dashboard` (Streamlit multi-page compliance interface).
+3. **Lead Branch Execution:**
+   - Lead: `agent/2.5-override-wiring` (connect bridge output to proof contract and live manager overrides).
+   - Lead / Teammate: `docs/7.3-readme-disclosure` (final README, architecture map, and AI disclosure).
+4. **Final Freeze & Submission:**
+   - Feature Freeze: Tuesday 20 Oct 2026, ~2:00 PM IST.
+   - Target Submit: Tuesday 20 Oct 2026, 7:00 PM IST.
+   - Official Lock: Tuesday 20 Oct 2026, 8:30 PM IST.
 2. **Launch Teammate Sprint Branches (via `docs/ISSUES_TO_CREATE.md` & `docs/TEAM_PROMPTS.md`):**
    - Teammate 1: `agent/2.4-audit-log` (hash-chained audit log & nonce replay defense).
    - Teammate 2: `parser/3.1-rule-parser` (rule-based NLP parser & prompt injection defense).
