@@ -49,6 +49,8 @@ def test_sc01_standard_resale(registry):
     assert res.proof.dust_minor == 0
     assert res.proof.community_total_minor == 30000
     assert res.proof.conservation_verified is True
+    oracle_res = calculate_payout(art, 1000000, "USD")
+    assert res.proof.pool_minor == oracle_res.pool
     assert len(res.proof.co_owner_payouts) == 2
     assert res.proof.co_owner_payouts[0].owner == "alice"
     assert res.proof.co_owner_payouts[0].amount_minor == 492000
@@ -91,6 +93,8 @@ def test_sc03_prompt_injection_resistance(registry):
     assert res.proof.co_owner_payouts[0].owner == "charlie"
     assert res.proof.co_owner_payouts[0].amount_minor == 510000
     assert res.proof.conservation_verified is True
+    oracle_res = calculate_payout(art, 600000, "USD")
+    assert res.proof.pool_minor == oracle_res.pool
 
 
 def test_sc04_estate_manager_override(registry):
@@ -116,6 +120,8 @@ def test_sc04_estate_manager_override(registry):
     assert res.proof.co_owner_payouts[2].owner == "frank"
     assert res.proof.co_owner_payouts[2].amount_minor == 830000
     assert res.proof.conservation_verified is True
+    oracle_res = calculate_payout(art, 5000000, "USD", override_royalty_bps=1200)
+    assert res.proof.pool_minor == oracle_res.pool
 
 
 def test_sc05_override_below_floor_rejection(registry):
@@ -148,6 +154,9 @@ def test_sc06_dust_split_precision(registry):
     assert res.proof is not None
     assert res.proof.gross_minor == 10001
     assert res.proof.dust_minor == 1
+    oracle_res = calculate_payout(art, 10001, "USD")
+    assert res.proof.pool_minor == oracle_res.pool
+    assert res.proof.pool_minor == 10001
     assert res.proof.community_total_minor == 1
     assert res.proof.co_owner_payouts[0].amount_minor == 3333
     assert res.proof.co_owner_payouts[1].amount_minor == 3333
@@ -231,6 +240,8 @@ def test_sc10_platform_fee(registry):
     assert res.proof.dust_minor == 0
     assert res.proof.community_total_minor == 19500
     assert res.proof.conservation_verified is True
+    oracle_res = calculate_payout(art, 1000033, "USD")
+    assert res.proof.pool_minor == oracle_res.pool
     assert len(res.proof.co_owner_payouts) == 2
     assert res.proof.co_owner_payouts[0].owner == "alice"
     assert res.proof.co_owner_payouts[0].amount_minor == 514818
@@ -258,6 +269,8 @@ def test_sc11_kes_same_currency(registry):
     assert res.proof.dust_minor == 0
     assert res.proof.community_total_minor == 3000000
     assert res.proof.conservation_verified is True
+    oracle_res = calculate_payout(art, 100000000, "KES")
+    assert res.proof.pool_minor == oracle_res.pool
     assert len(res.proof.co_owner_payouts) == 2
     assert res.proof.co_owner_payouts[0].owner == "karanja"
     assert res.proof.co_owner_payouts[0].amount_minor == 60900000
@@ -311,6 +324,7 @@ def test_bridge_fuzz_matches_oracle_across_all_artworks(registry):
             assert res.proof.community_cut_minor == oracle_proof.community_cut
             assert res.proof.dust_minor == oracle_proof.dust
             assert res.proof.community_total_minor == oracle_proof.community_total
+            assert res.proof.pool_minor == oracle_proof.pool
             assert res.proof.conservation_verified is True
             assert len(res.proof.co_owner_payouts) == len(oracle_proof.co_owner_shares)
 

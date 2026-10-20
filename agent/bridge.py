@@ -78,6 +78,7 @@ class SettlementProof:
     community_total_minor: int
     co_owner_payouts: tuple[CoOwnerPayout, ...]
     conservation_verified: bool
+    pool_minor: int
 
 
 @dataclass(frozen=True)
@@ -362,7 +363,15 @@ def _interpret(raw: object, common: dict) -> ReasoningResult:
             head = head_atom.get_name() if head_atom.get_metatype() == AtomKind.SYMBOL else str(head_atom)
 
             if head == "proof":
-                proof = _parse_proof_atom(atom)
+                try:
+                    proof = _parse_proof_atom(atom)
+                except Exception as exc:
+                    return ReasoningResult(
+                        ReasoningStatus.ENGINE_ERROR,
+                        raw_output=raw_text,
+                        diagnostics=f"malformed proof atom: {exc}",
+                        **common,
+                    )
                 if not proof.conservation_verified:
                     return ReasoningResult(
                         ReasoningStatus.ENGINE_ERROR,
@@ -471,6 +480,16 @@ def _parse_proof_atom(atom) -> SettlementProof:
 
     conserved = children[10].get_object().content is True
 
+    if len(children) < 12:
+        raise ValueError(f"proof atom expected at least 12 children, got {len(children)}")
+    pool_atom = children[11]
+    if not hasattr(pool_atom, "get_object") or pool_atom.get_object() is None:
+        raise ValueError("pool child is not a grounded value")
+    pool_val = pool_atom.get_object().content
+    if isinstance(pool_val, bool) or not isinstance(pool_val, int) or pool_val < 0:
+        raise ValueError(f"pool must be a non-negative int, got {pool_val}")
+    pool = pool_val
+
     return SettlementProof(
         artwork_id=artwork_id,
         gross_minor=gross,
@@ -482,6 +501,7 @@ def _parse_proof_atom(atom) -> SettlementProof:
         community_total_minor=comm_total,
         co_owner_payouts=tuple(shares),
         conservation_verified=conserved,
+        pool_minor=pool,
     )
 
 

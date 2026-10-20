@@ -40,7 +40,7 @@
           ($comm-total (+ $comm $dust))
           ($total-dist (+ $fee (+ $artist (+ $comm (+ $shares-sum $dust)))))
           ($conserved (== $total-dist $gross)))
-      (proof $artwork $gross $fee $net $artist $comm $dust $comm-total $shares $conserved)))
+      (proof $artwork $gross $fee $net $artist $comm $dust $comm-total $shares $conserved $pool)))
 
 ;; --- Standard Resale Policy Evaluation ---
 ;; Queries AtomSpace for artwork facts and validates fiduciary boundaries.

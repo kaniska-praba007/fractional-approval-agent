@@ -43,25 +43,25 @@
 
 ;; --- Assertions for SC-01 through SC-06 ---
 
-;; Test SC-01: Standard Resale (HFA-101, gross 1,000,000)
+;; Test SC-01: Standard Resale (HFA-101, gross 1000000)
 !(assertEqual
   (evaluate-resale HFA-101 1000000 USD $result)
   (proof HFA-101 1000000 0 1000000 150000 30000 0 30000
     (cons-payout (payout-entry alice 6000 0xalice 492000)
     (cons-payout (payout-entry bob 4000 0xbob 328000) ()))
-    True))
+    True 820000))
 
-;; Test SC-02: Below Reserve Rejection (HFA-101, gross 200,000 < reserve 300,000)
+;; Test SC-02: Below Reserve Rejection (HFA-101, gross 200000 < reserve 300000)
 !(assertEqual
   (evaluate-resale HFA-101 200000 USD $result)
   (rejected BELOW_RESERVE 200000 300000))
 
-;; Test SC-03: Prompt Injection Stored Rule Resistance (HFA-102, gross 600,000)
+;; Test SC-03: Prompt Injection Stored Rule Resistance (HFA-102, gross 600000)
 !(assertEqual
   (evaluate-resale HFA-102 600000 USD $result)
   (proof HFA-102 600000 0 600000 72000 18000 0 18000
     (cons-payout (payout-entry charlie 10000 0xcharlie 510000) ())
-    True))
+    True 510000))
 
 ;; Test SC-04: Estate Manager Override Upward (HFA-103, override royalty 1200 bps)
 !(assertEqual
@@ -70,7 +70,7 @@
     (cons-payout (payout-entry dave 5000 0xdave 2075000)
     (cons-payout (payout-entry elena 3000 0xelena 1245000)
     (cons-payout (payout-entry frank 2000 0xfrank 830000) ())))
-    True))
+    True 4150000))
 
 ;; Test SC-05: Override Below Floor Rejection (HFA-101, override 500 bps < floor 1000 bps)
 !(assertEqual
@@ -84,4 +84,4 @@
     (cons-payout (payout-entry holder_a 3333 0xholder_a 3333)
     (cons-payout (payout-entry holder_b 3333 0xholder_b 3333)
     (cons-payout (payout-entry holder_c 3334 0xholder_c 3334) ())))
-    True))
+    True 10001))
