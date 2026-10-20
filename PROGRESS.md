@@ -479,8 +479,3 @@ The workflow file is committed at `.github/workflows/ci.yml`.
    - Feature Freeze: Tuesday 20 Oct 2026, ~2:00 PM IST.
    - Target Submit: Tuesday 20 Oct 2026, 7:00 PM IST.
    - Official Lock: Tuesday 20 Oct 2026, 8:30 PM IST.
-
-## 2.7 Ledger Follow-up
-- Added empty-ledger verification and currency-separated balances.
-- Separated community and dust ledger entries; added ledger reset support.
-- Tests: 141 passed, 1 xfailed.
