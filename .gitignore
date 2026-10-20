@@ -223,3 +223,10 @@ __marimo__/
 .env
 .env*.local
 .env.local
+
+SKILLS.md
+GIT_WORKFLOW.md
+AGENTS.md
+skills/
+omega-meta/
+SKILL.md
