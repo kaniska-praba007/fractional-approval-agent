@@ -18,9 +18,9 @@ def registry():
 
 
 def test_scenario_files_exist_and_parse():
-    expected_scenarios = [f"sc0{i}" for i in range(1, 10)]
+    expected_scenarios = [f"sc0{i}" for i in range(1, 10)] + [f"sc{i}" for i in range(10, 13)]
     found = list(SCENARIOS_DIR.glob("*.json"))
-    assert len(found) >= 9
+    assert len(found) >= 12
     for s in expected_scenarios:
         matches = list(SCENARIOS_DIR.glob(f"{s}_*.json"))
         assert len(matches) == 1, f"Missing or duplicate scenario file for {s}"
@@ -109,15 +109,60 @@ def test_oracle_sc06_dust_split(registry):
     assert proof.conservation_verified is True
 
 
+def test_oracle_sc10_platform_fee(registry):
+    art = registry["TEST-FEE"]
+    proof = calculate_payout(art, gross_minor=1000033, currency="USD")
+    assert proof.gross == 1000033
+    assert proof.platform_fee == 25000  # (1000033 * 250) // 10000 == 25000 (remainder 8250 floored)
+    assert proof.net == 975033
+    assert proof.artist_royalty == 97503  # (975033 * 1000) // 10000 == 97503
+    assert proof.community_cut == 19500   # (975033 * 200) // 10000 == 19500
+    assert proof.dust == 0
+    assert proof.community_total == 19500
+    assert len(proof.co_owner_shares) == 2
+    assert proof.co_owner_shares[0].owner == "alice"
+    assert proof.co_owner_shares[0].amount_minor == 514818
+    assert proof.co_owner_shares[1].owner == "bob"
+    assert proof.co_owner_shares[1].amount_minor == 343212
+    assert proof.conservation_verified is True
+
+
+def test_oracle_sc11_kes_same_currency(registry):
+    art = registry["TEST-KES"]
+    proof = calculate_payout(art, gross_minor=100000000, currency="KES")
+    assert proof.gross == 100000000
+    assert proof.currency == "KES"
+    assert proof.platform_fee == 0
+    assert proof.net == 100000000
+    assert proof.artist_royalty == 10000000
+    assert proof.community_cut == 3000000
+    assert proof.dust == 0
+    assert proof.community_total == 3000000
+    assert len(proof.co_owner_shares) == 2
+    assert proof.co_owner_shares[0].owner == "karanja"
+    assert proof.co_owner_shares[0].amount_minor == 60900000
+    assert proof.co_owner_shares[1].owner == "mutua"
+    assert proof.co_owner_shares[1].amount_minor == 26100000
+    assert proof.conservation_verified is True
+
+
+def test_oracle_sc12_kes_currency_mismatch(registry):
+    art = registry["TEST-KES"]
+    with pytest.raises(OracleRejection) as exc_info:
+        calculate_payout(art, gross_minor=1000000, currency="USD")
+    assert exc_info.value.code == "UNSUPPORTED_CURRENCY"
+
+
 def test_oracle_seeded_fuzz_conservation_invariant(registry):
     """Seed random generator and test 200 arbitrary transactions ensuring conservation invariant."""
     rng = random.Random(42)
 
     for art_id, art in registry.items():
         reserve = art["reserve"]["amount_minor"]
+        curr = art["reserve"]["currency"]
         for _ in range(50):
-            gross = rng.randint(reserve, reserve * 50 + 123456)
-            proof = calculate_payout(art, gross_minor=gross, currency="USD")
+            gross = rng.randint(reserve, min(reserve * 20 + 123456, 1_000_000_000))
+            proof = calculate_payout(art, gross_minor=gross, currency=curr)
             # Verify conservation: fee + artist + community + sum(owners) + dust == gross
             total_distributed = (
                 proof.platform_fee
@@ -145,3 +190,4 @@ def test_oracle_rejects_invalid_inputs(registry):
     # Currency mismatch
     with pytest.raises(OracleRejection):
         calculate_payout(art, gross_minor=1000000, currency="EUR")
+

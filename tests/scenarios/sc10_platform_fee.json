@@ -1,0 +1,36 @@
+{
+  "scenario_id": "SC-10",
+  "name": "Platform Fee Deduction and Remainder Rounding (TEST-FEE)",
+  "description": "Gross resale of 1000033 cents with 250 bps platform fee leaves non-zero remainder, exercising integer floor rounding before royalty deductions",
+  "input": {
+    "artwork_id": "TEST-FEE",
+    "gross_minor": 1000033,
+    "currency": "USD",
+    "nonce": "nonce-sc10-101010"
+  },
+  "expected": {
+    "status": "APPROVED",
+    "gross_minor": 1000033,
+    "platform_fee_minor": 25000,
+    "net_minor": 975033,
+    "artist_royalty_minor": 97503,
+    "community_cut_minor": 19500,
+    "dust_minor": 0,
+    "community_total_minor": 19500,
+    "co_owner_payouts": [
+      {
+        "owner": "alice",
+        "wallet": "0xalice",
+        "bps": 6000,
+        "amount_minor": 514818
+      },
+      {
+        "owner": "bob",
+        "wallet": "0xbob",
+        "bps": 4000,
+        "amount_minor": 343212
+      }
+    ],
+    "conservation_invariant_satisfied": true
+  }
+}

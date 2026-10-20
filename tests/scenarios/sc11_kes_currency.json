@@ -1,0 +1,36 @@
+{
+  "scenario_id": "SC-11",
+  "name": "Same-Currency Settlement in Kenyan Shillings (TEST-KES)",
+  "description": "Settlement of TEST-KES denominated and transacted in KES, demonstrating non-USD currency support",
+  "input": {
+    "artwork_id": "TEST-KES",
+    "gross_minor": 100000000,
+    "currency": "KES",
+    "nonce": "nonce-sc11-202020"
+  },
+  "expected": {
+    "status": "APPROVED",
+    "gross_minor": 100000000,
+    "platform_fee_minor": 0,
+    "net_minor": 100000000,
+    "artist_royalty_minor": 10000000,
+    "community_cut_minor": 3000000,
+    "dust_minor": 0,
+    "community_total_minor": 3000000,
+    "co_owner_payouts": [
+      {
+        "owner": "karanja",
+        "wallet": "0xkaranja",
+        "bps": 7000,
+        "amount_minor": 60900000
+      },
+      {
+        "owner": "mutua",
+        "wallet": "0xmutua",
+        "bps": 3000,
+        "amount_minor": 26100000
+      }
+    ],
+    "conservation_invariant_satisfied": true
+  }
+}
