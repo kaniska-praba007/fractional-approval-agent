@@ -18,7 +18,7 @@ def test_registry_contains_required_artworks():
         data = json.load(f)
 
     artworks_by_id = {art["artwork_id"]: art for art in data}
-    for expected_id in ["HFA-101", "HFA-102", "HFA-103", "TEST-DUST"]:
+    for expected_id in ["HFA-101", "HFA-102", "HFA-103", "TEST-DUST", "TEST-FEE", "TEST-KES"]:
         assert expected_id in artworks_by_id, f"Missing {expected_id} in registry"
 
 
@@ -63,8 +63,11 @@ def test_registry_business_rules_invariants():
         art_id = art["artwork_id"]
         # All synthetic
         assert art.get("synthetic") is True, f"{art_id} must have synthetic: true"
-        # Platform fee 0
-        assert art.get("platform_fee_bps") == 0, f"{art_id} platform_fee_bps must be 0"
+        # Platform fee 0 (except TEST-FEE platform fee benchmark)
+        if art_id != "TEST-FEE":
+            assert art.get("platform_fee_bps") == 0, f"{art_id} platform_fee_bps must be 0"
+        else:
+            assert art.get("platform_fee_bps") == 250, f"{art_id} platform_fee_bps must be 250"
         # Royalty floor <= royalty
         assert art.get("royalty_floor_bps", 0) <= art.get("royalty_bps", 0), (
             f"{art_id} royalty_floor_bps > royalty_bps"
