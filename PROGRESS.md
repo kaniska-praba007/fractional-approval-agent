@@ -20,6 +20,7 @@
 | **Hyperon MeTTa Settlement** | **TASK 2 VERIFIED** | Level B (Executed) | Fiduciary settlement & rejection rules in `metta/royalties.metta`, native Atom API bridge, 42/42 tests passing. |
 | **Branch Architecture & Fixtures** | **STAGE 3 & 4 VERIFIED** | Level B (Executed) | Master branch guide, shared proof contract, real bridge proof fixtures, teammate prompts. |
 | **Developer Scaffold & Stubs** | **SCAFFOLD 0.5 VERIFIED** | Level B (Executed) | Stubs, xfail suite (45 passed, 12 xfailed), 1-click setup, Streamlit proof viewer, onboarding & GitHub templates. |
+| **Edge Cases (fee, KES)** | **TASK 1.5 VERIFIED** | Level B (Executed) | SC-10 to SC-12, TEST-FEE and TEST-KES, 51 passed, 12 xfailed. |
 | **Audit Trail & Nonce Replay** | **STUB READY (xfail)** | Level B (Executed) | `agent/audit_log.py`, `tests/test_audit.py` ready for teammate on `agent/2.4-audit-log`. |
 | **NLP Rule Parser** | **STUB READY (xfail)** | Level B (Executed) | `agent/parser.py`, `tests/test_parser.py` ready for teammate on `parser/3.1-rule-parser`. |
 | **Simulated Ledger** | **STUB READY (xfail)** | Level B (Executed) | `agent/ledger.py`, `tests/test_ledger.py` ready for teammate on `agent/2.6-sim-ledger`. |
@@ -30,8 +31,8 @@
 ## Git Branch Topology, Commits & Merges
 
 ### Active & Historical Branches
-- **`main`** (Base branch): Stable mainline tracking official deliverables. Head at `b3dd353` after merging PR #2 and PR #3.
-- **`docs/7.0-branch-guide`** (Active branch): Contains `docs/BRANCHES.md`, `docs/PROOF_SHAPE.md`, `docs/TEAM_PROMPTS.md`, and canonical proof fixtures `tests/fixtures/proofs/*.json` (commit `a4b3906`).
+- **`main`** (Base branch): Stable mainline tracking official deliverables. Head at `b3dd353` after merging PR #2 and PR #3, later advanced by the bridge hardening, docs and scaffold merges.
+- **`docs/7.0-branch-guide`** (Merged): Contains `docs/BRANCHES.md`, `docs/PROOF_SHAPE.md`, `docs/TEAM_PROMPTS.md`, and canonical proof fixtures `tests/fixtures/proofs/*.json`.
 - **`metta/1.3-settlement-rule`** (Merged): Fiduciary settlement rules, direct Hyperon `assertEqual` tests, native Atom API bridge; merged into `main` via PR #3 (`b3dd353`).
 - **`data/0.3-synthetic-registry`** (Merged): Canonical synthetic registry `data/artworks.json`, test oracle, scenario definitions `SC-01` to `SC-09`, and `.github/workflows/ci.yml`; merged into `main` via PR #2 (`9d26b7f`).
 - **`spike/metta-omega-integration`** (Merged): Foundation branch where Hyperon MeTTa bridge and live Gemini Omega investigation were performed; merged into `origin/main` as PR #1 (`bba2383`).
@@ -49,7 +50,7 @@
 |/  
 *   d1ace45 merge: resolve documentation conflicts with origin/main
 |\  
-| * bba2383 Spike/metta omega integration (#1)
+| * bba2383 Spike/metta-omega-integration (#1)
 * | 8844461 docs: restore guardrails, add handoff and CI, log spike progress
 | | * 40d3d73 feat: verified Hyperon MeTTa adapter, tests, and Omega investigation notes
 | |/  
@@ -83,7 +84,7 @@ The workflow file is committed at `.github/workflows/ci.yml`.
 - **Enforced Guardrails:**
   1. **Decimal Guard in MeTTa:** `grep -nE '[0-9]+\.[0-9]+' metta/*.metta` fails if any decimal literals or floats appear in symbolic code or comments.
   2. **Python Floating Point & Silent Error Guard:** `grep -rnE 'float\(|except:[[:space:]]*$|except Exception:[[:space:]]*pass' agent app` fails if floats or unhandled bare/pass exceptions are detected.
-  3. **Full Automated Test Suite:** `pytest -q` executes all 42 unit, integration, and MeTTa assertion tests. All tests must pass before merging.
+  3. **Full Automated Test Suite:** `pytest -q` executes all unit, integration, and MeTTa assertion tests. All tests must pass before merging.
 
 ---
 
@@ -322,33 +323,59 @@ The workflow file is committed at `.github/workflows/ci.yml`.
 - **Cross-Reference Hygiene:**
   - Updated `docs/START_HERE.md` to link directly to `docs/FLOWS.md` with relative links.
 
-### 10. Context Precedence & Document Alignment (Docs 0.7: VERIFIED)
+### 10. Platform Fee Rounding & Multi-Currency Edge Cases (Task 1.5: VERIFIED)
+
+- **Edge Case Scenarios (SC-10, SC-11, SC-12):**
+  - `SC-10`: `TEST-FEE` benchmark artwork with 250 bps platform fee sold at 1,000,033 USD cents. Exercises integer floor division rounding on fee remainder.
+  - `SC-11`: `TEST-KES` benchmark artwork denominated and transacted in Kenyan Shillings (KES). Proves rules are not USD-hardcoded.
+  - `SC-12`: `TEST-KES` sold in USD; proves currency mismatch rejection with `UNSUPPORTED_CURRENCY` and zero disbursed payouts.
+- **Independent Test Oracle & Scenario Definitions:**
+  - Added scenario JSONs in `tests/scenarios/sc10_platform_fee.json`, `tests/scenarios/sc11_kes_currency.json`, and `tests/scenarios/sc12_kes_currency_mismatch.json`.
+  - Added independent reference calculations in `tests/test_oracle.py`.
+- **Synthetic Registry Expansion (`data/artworks.json`):**
+  - Registered `TEST-FEE` and `TEST-KES` with validated cap tables and synthetic tags.
+  - Updated `tests/test_registry.py` to enforce registry business rules.
+- **MeTTa Rules Robustness:**
+  - Verified that `metta/royalties.metta` required zero modifications for these scenarios.
+  - The existing settlement rules support arbitrary currencies and platform fee slots.
+- **Multi-Asset Invariant Fuzz Testing:**
+  - Extended randomized tests across all registered artworks, including KES and platform-fee assets.
+  - Verified the conservation invariant:
+    `gross == fee + artist + community + sum(coowners) + dust`.
+- **Canonical Fixtures Regeneration (`tests/fixtures/proofs/`):**
+  - Generated fixtures for SC-10, SC-11, and SC-12.
+  - Verified that existing SC-01 through SC-09 fixtures remained unchanged.
+- **Documentation Updates:**
+  - Updated the scenario mapping in `docs/FLOWS.md`.
+  - Added the fee and currency decision to `docs/DECISIONS.md`.
+  - Added `metta/1.5-edge-cases` to `docs/BRANCHES.md`.
+  - Updated `docs/PROOF_SHAPE.md` with currency and minor-unit details.
+- **Full Test Suite Status:** **51 passed, 12 xfailed in 15.93s**.
+
+### 11. Context Precedence & Document Alignment (Docs 0.7: VERIFIED)
+
 - **Authoritative Precedence Notice (`docs/CONTEXT.md`):**
-  - Added explicit top-level precedence banner resolving conflicts between early blueprint documentation and formal executable specifications.
-  - Mandated that where `docs/CONTEXT.md` disagrees with `docs/PROOF_SHAPE.md`, `docs/DECISIONS.md`, or `metta/royalties.metta`, the latter canonical files take precedence.
-  - Documented known differences: platform fee in conservation equation, `(rejected CODE ...)` atom syntax, terminal `APPROVED`/`REJECTED` statuses, and standardized `BELOW_RESERVE` and `ENGINE_UNAVAILABLE` reason codes, cross-referencing `docs/FLOWS.md`.
+  - Added a top-level notice resolving conflicts between early blueprint documentation and executable specifications.
+  - Established that `docs/PROOF_SHAPE.md`, `docs/DECISIONS.md`, and `metta/royalties.metta` take precedence where they disagree with `docs/CONTEXT.md`.
+  - Documented known differences involving platform fees, rejection syntax, terminal statuses, and standardized reason codes.
 - **Test File Naming Verification:**
-  - Audited all test references across `docs/TEAM_PROMPTS.md` and `docs/BRANCHES.md`.
-  - Confirmed 100% naming alignment with real files: `tests/test_audit.py`, `tests/test_parser.py`, and `tests/test_ledger.py`.
+  - Audited test references across `docs/TEAM_PROMPTS.md` and `docs/BRANCHES.md`.
+  - Confirmed naming alignment for `tests/test_audit.py`, `tests/test_parser.py`, and `tests/test_ledger.py`.
 
 ---
 
 ## Next Steps & Roadmap
 
-1. **Open Pull Request for Docs 0.7:**
-   - Merge `docs/0.7-context-note` into `main` after review.
+1. **Open Pull Requests for Edge Cases 1.5 and Docs 0.7:**
+   - Review and merge `metta/1.5-edge-cases` into `main`.
+   - Review and merge `docs/0.7-context-note` into `main`.
 2. **Launch Teammate Sprint Branches (via `docs/ISSUES_TO_CREATE.md` & `docs/TEAM_PROMPTS.md`):**
-   - Teammate 1: `agent/2.4-audit-log` (hash-chained audit log & nonce replay defense).
-   - Teammate 2: `parser/3.1-rule-parser` (rule-based NLP parser & prompt injection defense).
-   - Teammate 3: `agent/2.6-sim-ledger` (simulated double-entry ledger in integer cents).
-   - Teammate 4: `ui/6.1-dashboard` (Streamlit multi-page compliance interface).
+   - Teammate 1: `agent/2.4-audit-log` (hash-chained audit log & nonce replay defense), then `agent/2.6-sim-ledger` (simulated double-entry ledger in integer cents).
+   - Teammate 2: `parser/3.1-rule-parser` (rule-based NLP parser & prompt injection defense), then `docs/7.3-readme-disclosure` (final README and AI disclosure).
+   - Teammate 3: `ui/6.1-dashboard` (Streamlit multi-page compliance interface).
 3. **Lead Branch Execution:**
-   - Lead: `agent/2.5-override-wiring` (connect bridge output to proof contract and live manager overrides).
-   - Lead / Teammate: `docs/7.3-readme-disclosure` (final README, architecture map, and AI disclosure).
+   - Lead: `agent/2.5-override-wiring` (connect bridge output to proof contract and live manager overrides), merges, and video.
 4. **Final Freeze & Submission:**
    - Feature Freeze: Tuesday 20 Oct 2026, ~2:00 PM IST.
    - Target Submit: Tuesday 20 Oct 2026, 7:00 PM IST.
    - Official Lock: Tuesday 20 Oct 2026, 8:30 PM IST.
-
-
-

@@ -123,5 +123,65 @@
     "platform_fee_bps": 0,
     "flags": [],
     "synthetic": true
+  },
+  {
+    "artwork_id": "TEST-FEE",
+    "title": "Platform Fee Benchmark (Synthetic)",
+    "creator_name": "Synthetic Fee Benchmark Artist",
+    "creator_wallet": "0xsynthetic_fee_artist",
+    "status": "LIVING",
+    "royalty_bps": 1000,
+    "royalty_floor_bps": 1000,
+    "community_bps": 200,
+    "community_wallet": "0xcommunity_fund",
+    "reserve": {
+      "amount_minor": 500000,
+      "currency": "USD"
+    },
+    "cap_table": [
+      {
+        "owner": "alice",
+        "wallet": "0xalice",
+        "bps": 6000
+      },
+      {
+        "owner": "bob",
+        "wallet": "0xbob",
+        "bps": 4000
+      }
+    ],
+    "platform_fee_bps": 250,
+    "flags": [],
+    "synthetic": true
+  },
+  {
+    "artwork_id": "TEST-KES",
+    "title": "Nairobi Corridor Benchmark (Synthetic)",
+    "creator_name": "Synthetic Nairobi Artist",
+    "creator_wallet": "0xsynthetic_kes_artist",
+    "status": "LIVING",
+    "royalty_bps": 1000,
+    "royalty_floor_bps": 500,
+    "community_bps": 300,
+    "community_wallet": "0xcommunity_kes",
+    "reserve": {
+      "amount_minor": 5000000,
+      "currency": "KES"
+    },
+    "cap_table": [
+      {
+        "owner": "karanja",
+        "wallet": "0xkaranja",
+        "bps": 7000
+      },
+      {
+        "owner": "mutua",
+        "wallet": "0xmutua",
+        "bps": 3000
+      }
+    ],
+    "platform_fee_bps": 0,
+    "flags": [],
+    "synthetic": true
   }
 ]

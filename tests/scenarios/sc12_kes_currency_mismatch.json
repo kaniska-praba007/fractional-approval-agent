@@ -1,0 +1,18 @@
+{
+  "scenario_id": "SC-12",
+  "name": "Currency Mismatch Rejection (TEST-KES in USD)",
+  "description": "Attempted settlement of KES-denominated asset in USD; rejected with UNSUPPORTED_CURRENCY",
+  "input": {
+    "artwork_id": "TEST-KES",
+    "gross_minor": 1000000,
+    "currency": "USD",
+    "nonce": "nonce-sc12-303030"
+  },
+  "expected": {
+    "status": "REJECTED",
+    "rejection_code": "UNSUPPORTED_CURRENCY",
+    "rejection_reason": "Currency USD does not match reserve KES",
+    "gross_minor": 1000000,
+    "payouts_generated": false
+  }
+}

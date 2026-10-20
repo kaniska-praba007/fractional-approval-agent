@@ -94,6 +94,8 @@ This document defines the canonical JSON contract emitted by the fiduciary reaso
 
 ## 3. Field Specifications
 
+> **Note:** `currency` is a standard currency string (e.g. `"USD"`, `"KES"`), and all monetary amounts (`gross`, `fee`, `artist`, `community`, `dust`, `pool`, `amount`) are strictly integer minor units of that currency.
+
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `status` | `string` | Verdict: `"APPROVED"` or `"REJECTED"`. |

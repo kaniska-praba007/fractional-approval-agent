@@ -36,6 +36,9 @@ This document records the foundational architectural, mathematical, and workflow
 - **2026-10-19 — Working Milestone Targets:** Working internal feature freeze is Tuesday 20 Oct 2026 at ~2:00 PM IST; target submission preparation at 7:00 PM IST; final submission lock at 8:30 PM IST.
   - *Reason:* Provides a safe 6.5-hour operational buffer to record the 3-minute video, verify submission checklists, and test clean clones.
 
+- **2026-10-20 — Fee Deduction & Currency Edge Cases:** Non-zero platform fee deduction (SC-10) and same-currency settlement (SC-11) added; cross-currency FX is out of scope (fails closed with `UNSUPPORTED_CURRENCY`, SC-12).
+  - *Reason:* Validates first-deduction remainder rounding and dynamic currency handling while avoiding floating-point or external FX rate oracle dependencies.
+
 ---
 
 ## Open & Unverified Questions

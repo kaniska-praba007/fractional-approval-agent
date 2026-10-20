@@ -1,0 +1,25 @@
+{
+  "status": "APPROVED",
+  "reason_code": null,
+  "artwork_id": "TEST-FEE",
+  "currency": "USD",
+  "gross": 1000033,
+  "fee": 25000,
+  "artist": 97503,
+  "community": 19500,
+  "dust": 0,
+  "pool": 858030,
+  "coowners": [
+    {
+      "owner": "alice",
+      "wallet": "0xalice",
+      "amount": 514818
+    },
+    {
+      "owner": "bob",
+      "wallet": "0xbob",
+      "amount": 343212
+    }
+  ],
+  "producing_layer": "bridge/MeTTa"
+}

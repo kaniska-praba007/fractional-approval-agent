@@ -211,6 +211,76 @@ def test_bridge_fails_closed_on_unknown_artwork(registry):
     assert not res.ok
 
 
+def test_sc10_platform_fee(registry):
+    art = registry["TEST-FEE"]
+    facts = load_artwork_facts(art)
+    req = ReasoningRequest(
+        rule_file=RULES_FILE,
+        facts=facts,
+        query_function="evaluate-resale",
+        query_args=("TEST-FEE", 1000033, "USD"),
+    )
+    res = run_reasoning(req)
+    assert res.status is ReasoningStatus.SUCCESS
+    assert res.proof is not None
+    assert res.proof.gross_minor == 1000033
+    assert res.proof.platform_fee_minor == 25000
+    assert res.proof.net_minor == 975033
+    assert res.proof.artist_royalty_minor == 97503
+    assert res.proof.community_cut_minor == 19500
+    assert res.proof.dust_minor == 0
+    assert res.proof.community_total_minor == 19500
+    assert res.proof.conservation_verified is True
+    assert len(res.proof.co_owner_payouts) == 2
+    assert res.proof.co_owner_payouts[0].owner == "alice"
+    assert res.proof.co_owner_payouts[0].amount_minor == 514818
+    assert res.proof.co_owner_payouts[1].owner == "bob"
+    assert res.proof.co_owner_payouts[1].amount_minor == 343212
+
+
+def test_sc11_kes_same_currency(registry):
+    art = registry["TEST-KES"]
+    facts = load_artwork_facts(art)
+    req = ReasoningRequest(
+        rule_file=RULES_FILE,
+        facts=facts,
+        query_function="evaluate-resale",
+        query_args=("TEST-KES", 100000000, "KES"),
+    )
+    res = run_reasoning(req)
+    assert res.status is ReasoningStatus.SUCCESS
+    assert res.proof is not None
+    assert res.proof.gross_minor == 100000000
+    assert res.proof.platform_fee_minor == 0
+    assert res.proof.net_minor == 100000000
+    assert res.proof.artist_royalty_minor == 10000000
+    assert res.proof.community_cut_minor == 3000000
+    assert res.proof.dust_minor == 0
+    assert res.proof.community_total_minor == 3000000
+    assert res.proof.conservation_verified is True
+    assert len(res.proof.co_owner_payouts) == 2
+    assert res.proof.co_owner_payouts[0].owner == "karanja"
+    assert res.proof.co_owner_payouts[0].amount_minor == 60900000
+    assert res.proof.co_owner_payouts[1].owner == "mutua"
+    assert res.proof.co_owner_payouts[1].amount_minor == 26100000
+
+
+def test_sc12_kes_currency_mismatch(registry):
+    art = registry["TEST-KES"]
+    facts = load_artwork_facts(art)
+    req = ReasoningRequest(
+        rule_file=RULES_FILE,
+        facts=facts,
+        query_function="evaluate-resale",
+        query_args=("TEST-KES", 1000000, "USD"),
+    )
+    res = run_reasoning(req)
+    assert res.status is ReasoningStatus.REJECTED
+    assert not res.ok
+    assert res.rejection is not None
+    assert res.rejection.rejection_code == "UNSUPPORTED_CURRENCY"
+
+
 def test_bridge_fuzz_matches_oracle_across_all_artworks(registry):
     """Seed pseudo-random numbers and verify 20 transactions against the independent test oracle."""
     rng = random.Random(101)
@@ -218,16 +288,17 @@ def test_bridge_fuzz_matches_oracle_across_all_artworks(registry):
     for art_id, art in registry.items():
         facts = load_artwork_facts(art)
         reserve = art["reserve"]["amount_minor"]
+        curr = art["reserve"]["currency"]
 
         for _ in range(5):
-            gross = rng.randint(reserve, reserve * 20 + 777)
-            oracle_proof = calculate_payout(art, gross_minor=gross, currency="USD")
+            gross = rng.randint(reserve, min(reserve * 20 + 777, 1_000_000_000))
+            oracle_proof = calculate_payout(art, gross_minor=gross, currency=curr)
 
             req = ReasoningRequest(
                 rule_file=RULES_FILE,
                 facts=facts,
                 query_function="evaluate-resale",
-                query_args=(art_id, gross, "USD"),
+                query_args=(art_id, gross, curr),
             )
             res = run_reasoning(req)
             assert res.status is ReasoningStatus.SUCCESS
@@ -247,3 +318,4 @@ def test_bridge_fuzz_matches_oracle_across_all_artworks(registry):
                 assert metta_p.owner == oracle_p.owner
                 assert metta_p.bps == oracle_p.bps
                 assert metta_p.amount_minor == oracle_p.amount_minor
+

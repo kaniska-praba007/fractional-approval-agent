@@ -1,0 +1,25 @@
+{
+  "status": "APPROVED",
+  "reason_code": null,
+  "artwork_id": "TEST-KES",
+  "currency": "KES",
+  "gross": 100000000,
+  "fee": 0,
+  "artist": 10000000,
+  "community": 3000000,
+  "dust": 0,
+  "pool": 87000000,
+  "coowners": [
+    {
+      "owner": "karanja",
+      "wallet": "0xkaranja",
+      "amount": 60900000
+    },
+    {
+      "owner": "mutua",
+      "wallet": "0xmutua",
+      "amount": 26100000
+    }
+  ],
+  "producing_layer": "bridge/MeTTa"
+}
