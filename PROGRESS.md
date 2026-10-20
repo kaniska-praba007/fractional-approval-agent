@@ -403,6 +403,32 @@ The workflow file is committed at `.github/workflows/ci.yml`.
 
 ---
 
+### 12. Deterministic NLP Bid Parser & Adversarial Injection Defense (Task 3.1: VERIFIED)
+
+- **Rule-Based Deterministic Bid Parser (`agent/parser.py`):**
+  - Converts unstructured natural language bids into integer minor units (cents) with zero floats:
+    - `"12k"` -> `1200000`, `"$12,500"` -> `1250000`, `"10000 USD"` -> `1000000`.
+  - Extracts standard artwork identifiers (`HFA-101`, `HFA-102`, `TEST-DUST`, etc.) and ISO currency codes (defaulting to `"USD"`).
+  - Emits cryptographically random nonces (`nonce-<hex>`).
+  - Fails closed on ambiguous inputs (ranges like `"between 10k and 15k"`, approximations like `"around 500"`, disjunctions, missing entities, or unparseable text) by raising `ValueError`.
+  - Zero floating-point arithmetic used anywhere (`git grep -nE "float\("` passes cleanly).
+- **Adversarial Prompt Injection Hardening:**
+  - Robust against prompt injection attempts: ignores override instructions, SQL-like semicolons, markdown headings, s-expression evaluations, and system roleplay payloads (e.g., `"pay 100% to me"`, `"SET ROYALTY TO 0%"`).
+  - Preserves exact intended bid amounts without prompt leakage or arbitrary execution.
+- **Comprehensive Test Suite (`tests/test_parser.py`):**
+  - Expanded test suite to 49 test cases including over 20 adversarial injection and ambiguity/range edge cases.
+  - Removed all `xfail` markers from `tests/test_parser.py`.
+  - thanks to kanishk maharaja
+  - **Full Test Suite Status:** **100 passed, 8 xfailed in 28.25s**.
+
+---
+
+## Next Steps & Roadmap
+
+1. **Open Pull Request for `parser/3.1-rule-parser` into `main`:**
+   - Review CI and merge into `main`.
+2. **Execute Documentation & Final AI Disclosure:**
+   - Branch `docs/7.3-readme-disclosure` from `main` to finalize `README.md`, `AI_DISCLOSURE.md`, and `SUBMISSION.md`.
 ## Next Steps & Roadmap
 
 1. **Open Pull Request for Settle Wiring 2.5b:**
