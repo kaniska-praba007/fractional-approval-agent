@@ -1,141 +1,192 @@
 # Finance TrustGate: Fractional Approval Agent
+> **#BuyBlackArt on BASIX.Market**
 
-> **Hackathon Track:** MeTTa Foundation — *The Glass Box Agent* (Built for **BASIX.Market** in the spirit of the **Omega AI Agents** neuro-symbolic architecture)
->
-> A neuro-symbolic "Glass Box" compliance agent that decides whether a fractional-ownership purchase on BASIX.Market should be **approved, flagged, or rejected**—complete with an explicit confidence level, a full rule-by-rule justification trail, and a non-destructive human override that never erases the original reasoning.
+[![CI](https://github.com/kaniska-praba007/fractional-approval-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/kaniska-praba007/fractional-approval-agent/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python: 3.12](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/)
+[![Symbolic Engine: Hyperon 0.2.10](https://img.shields.io/badge/symbolic-Hyperon%200.2.10-purple)](https://github.com/trueagi-io/hyperon-experimental)
+
+**Track:** Track 02: Builders — Advanced  
+**Challenge:** Challenge 01: Trusted With Money (HFAS Brief: #BuyBlackArt)
 
 ---
 
-## Problem
+## Partner Brief Proposal Notice
+> **Notice:** This proposal is based on the Harlem Fine Arts Show (HFAS) brief for **#BuyBlackArt** on BASIX.Market. All demonstration artwork catalog records, collector identities, and wallet addresses are synthetic placeholders marked `"synthetic": true`. No private or unreleased rights-holder data is used.
 
-Fractional-ownership marketplaces like BASIX.Market face a critical compliance bottleneck: small financial decisions (e.g., *Can this buyer purchase a share of this asset?*) rely either on unscalable manual reviews or opaque "black-box" AI scoring. When an application is wrongly rejected or flagged, nobody can audit *which specific rule* triggered the outcome, leaving compliance officers and auditors with nothing defensible.
+---
 
-Furthermore, real-world applications frequently arrive **incomplete**—with half-finished KYC or unverified funding sources. Naive automated systems either reject every incomplete application (hurting business conversion) or silently approve them (exposing the platform to severe regulatory risk).
+## 3-Minute Demo Video
+- **Video Link:** [Watch the 3-Minute Demonstration Video](https://youtu.be/placeholder-demo-video)
+- A 3-minute glass-box walkthrough demonstrating deterministic resale settlements, reserve floor protections, prompt injection defense, fiduciary manager overrides with statutory floor enforcement, replay defenses, and cryptographic SHA-256 audit log verification.
 
-## Solution: The Glass Box Agent
+---
 
-**Finance TrustGate** replaces black-box guesswork with an inspectable, neuro-symbolic decision pipeline where **a deterministic MeTTa rule engine owns the decision** and an LLM is strictly confined to translating messy, unstructured applications into structured facts.
+## Problem & Motivation
 
-- **Deterministic verdicts ("Glass Box" transparency).** Same inputs, same outcome, every single time. Every reasoning step inside the MeTTa Atomspace is inspectable.
-- **Explicit confidence.** Every deduction that lowers confidence is logged alongside the exact rule ID (`R1`–`R6`) that triggered it.
-- **Gap handling, not gap hiding.** Partial data explicitly caps confidence and routes the application to a human compliance officer rather than silently passing or failing.
-- **Non-destructive human override.** A compliance officer can grant a documented exception. The MeTTa engine re-evaluates live, and the append-only audit trail preserves both the original symbolic verdict and the human override.
+Fractional fine-art secondary markets require strict fiduciary trust. However, prevailing automated agent workflows suffer from critical vulnerabilities:
+1. **IEEE 754 Floating-Point Inaccuracies:** Binary floating-point division (`/` or `round()`) leaks fractions of cents, failing strict audit standards.
+2. **Probabilistic Hallucinations:** LLM-based financial calculation can hallucinate rates, waive royalties, or succumb to prompt injections.
+3. **Black-Box Opacity:** Conventional ML systems cannot provide a step-by-step, mathematically proven justification trail.
+4. **Destructive Overrides:** Traditional overrides rewrite database history, destroying non-repudiation.
 
-## How it works
+---
+
+## The Solution: Neuro-Symbolic Fiduciary Agent
+
+**Finance TrustGate (CuraFide)** enforces mathematical certainty and transparent fiduciary governance:
+- **MeTTa Does All Money Maths:** OpenCog Hyperon (`hyperon==0.2.10`) executes symbolic deduction rules in integer minor units (USD cents or KES cents) and basis points (bps).
+- **Exact Conservation Equation:** Platform fee deducted first; net proceeds split into secondary royalty (*Droit de Suite*), community preservation cut, and cap-table shares; single-cent dust deterministically sweeps to the Community Arts Fund:
+  $$\text{fee} + \text{artist} + \text{community} + \sum_{i} \text{amount}_i + \text{dust} \equiv \text{gross}$$
+- **Fail-Closed Security:** Ambiguous inputs, reserve price breaches, unmapped assets, or illegal overrides halt with zero disbursed funds and emit standardized machine-readable reason codes.
+- **Glass-Box Audit Trail:** Every transaction is committed to an append-only SHA-256 hash-chained log with nonce replay defenses.
+- **Simulated Double-Entry Ledger:** Posts balanced debit and credit entries verifying zero-sum balance sheet reconciliation.
+
+---
+
+## The 9-Stage Pipeline Architecture
 
 ```text
-Application (free text / form)
-        │
-        ▼
- [LLM extraction]  ── structured facts only, no decisions ──┐
-        │                                                   │
-        ▼                                                   ▼
- [MeTTa Atomspace]  facts + rules  ──►  verdict + confidence + rule trail
-        │
-        ▼
- [Python layer]  parses atoms, formats reasons, appends to audit log
-        │
-        ▼
- [API / UI]  "Why?" interrogation · Human override · One-page audit trail
+messy text ──► parser ──► validation ──► bridge ──► MeTTa rules ──► proof ──► audit log ──► ledger ──► UI
 ```
 
-**Design principle:** The symbolic MeTTa layer owns the control flow and the final verdict. The LLM acts strictly as a subordinate sensory parser, aligning with the Omega neuro-symbolic agent architecture.
+| Layer | Component | Core Responsibility | Guarantees |
+| :--- | :--- | :--- | :--- |
+| **Intake / NLP** | `agent/parser.py` | Extracts `artwork_id`, `gross_minor`, and currency. | Strips prompt injections, fails closed on ambiguity, zero floats. |
+| **Validation** | `agent/bridge.py` | Sanitizes inputs, allow-lists relations, verifies integers. | Rejects negative amounts, non-integers, booleans, and floats. |
+| **Bridge** | `agent/bridge.py` | Traverses native Hyperon Atom API; manages runtime. | Zero string splitting; fail-closed on empty or multiple atoms. |
+| **Symbolic Core** | `metta/royalties.metta` | Executes deduction hierarchy & cap-table splits. | Integer floor arithmetic, dust sweep, conservation assertion. |
+| **Controller** | `agent/settle.py` | Coordinates pipeline stages end-to-end. | Runs 100% offline by default without external network or API keys. |
+| **Audit Logger** | `agent/audit_log.py` | Commits proofs to append-only log with SHA-256 chain. | Nonce replay defense (`seen_nonce`), cryptographic verification. |
+| **Double-Entry** | `agent/ledger.py` | Posts balanced journals copying proof values verbatim. | Verified zero-sum balance sheets; never computes payouts. |
+| **Compliance UI** | `app/Home.py`, `app/pages/` | Visualizes proofs, audit logs, and overrides. | Reads values strictly from proof atoms; zero client-side math. |
 
-## Decision rules
+---
 
-| ID | Rule | Effect |
-| --- | --- | --- |
-| R1 | Funding source not verified | **Reject** (hard stop) |
-| R2 | KYC missing | **Reject** |
-| R3 | KYC partial | Cap confidence at 60, **Flag** for human sign-off |
-| R4 | Purchase pushes buyer above concentration limit | **Flag** |
-| R5 | High-risk asset without verified KYC | **Flag** |
-| R6 | All checks pass | **Approve** |
+## Scenario Walkthroughs (SC-01 through SC-12)
 
-> Thresholds live in `src/rules/approval.metta` and are tunable. This table must match that file. If they diverge, the `.metta` file is the source of truth and this table is a bug.
+| Scenario | Title | Description | Expected Status | Reason Code |
+| :--- | :--- | :--- | :--- | :--- |
+| **SC-01** | Standard Resale | Resale of `HFA-101` for $10,000 (1,000,000¢) with Alice (60%) and Bob (40%). | `APPROVED` | `null` |
+| **SC-02** | Below Reserve | Resale of `HFA-101` at $2,000 below registered $3,000 reserve floor. | `REJECTED` | `BELOW_RESERVE` |
+| **SC-03** | Prompt Injection | Hostile bid attempting to set royalty to 0%; stored 12% covenant enforced. | `APPROVED` | `null` |
+| **SC-04** | Manager Override | Estate bonus override (+200 bps) on `HFA-103` approved with valid rationale. | `APPROVED` | `null` |
+| **SC-05** | Override Below Floor | Illegal override reducing royalty below statutory floor (5% < 10%). | `REJECTED` | `OVERRIDE_BELOW_FLOOR` |
+| **SC-06** | Dust Sweep Precision | Odd-cent split (10,001¢) over 3333/3333/3334 shares; 1¢ swept to community. | `APPROVED` | `null` |
+| **SC-07** | Replay Attack Defense | Resubmitting previously settled nonce blocked at intake. | `REJECTED` | `DUPLICATE_NONCE` |
+| **SC-08** | Engine Fail-Closed | Unregistered artwork (`UNKNOWN-999`) returns empty atoms; funds remain locked. | `REJECTED` | `ENGINE_UNAVAILABLE` |
+| **SC-09** | Offline Determinism | Natural language bid processed purely offline without external LLM API. | `APPROVED` | `null` |
+| **SC-10** | Platform Fee Rounding| Resale on `TEST-FEE` with 250 bps fee; tests floor division fee rounding. | `APPROVED` | `null` |
+| **SC-11** | Kenyan Shillings (KES)| Multi-currency settlement on `TEST-KES` transacted in KES cents. | `APPROVED` | `null` |
+| **SC-12** | Currency Mismatch | Settlement in USD for KES-denominated asset fails closed safely. | `REJECTED` | `UNSUPPORTED_CURRENCY` |
 
-## Demo scenarios
+---
 
-Planned fixtures in `data/cases.json`. Expected outcomes are **design targets** until `pytest` passes.
+## Tech Stack
 
-| Case | Situation | Target verdict |
-| --- | --- | --- |
-| 001 | Verified buyer, low-risk asset, low concentration | Approve |
-| 002 | Partial KYC | Flag (confidence capped at 60) |
-| 003 | Funding source unverified | Reject |
-| 004 | Concentration over limit | Flag |
-| 005 | Partial KYC, then compliance override | Flag → Approve (override logged) |
+- **Symbolic Reasoning Engine:** OpenCog Hyperon (`hyperon==0.2.10`).
+- **Cognitive Operator Integration (Off Critical Path):** SingularityNET Omega.
+- **Intake & Orchestration:** Python 3.10 – 3.12, Pydantic, Regular Expressions.
+- **Cryptographic Audit:** SHA-256 Hash Chaining.
+- **Double-Entry Ledger:** Zero-sum integer balance verification.
+- **Frontend Dashboard:** Streamlit (`app/Home.py` and `app/pages/*.py`).
+- **Testing & Quality Assurance:** Pytest, randomized invariant fuzzers, GitHub Actions CI.
 
-## Sample audit trail
+---
 
-See [`docs/AUDIT_TRAIL_SAMPLE.md`](docs/AUDIT_TRAIL_SAMPLE.md) for the one-page format. Replace the illustrative sample with real output from the running system before submitting.
+## Clean Clone & Quickstart
 
-## Tech stack
+### Prerequisites
+- Python 3.10, 3.11, or 3.12 (required for Hyperon binary wheels).
+- Git.
 
-- **Symbolic reasoning:** MeTTa via [`hyperon`](https://github.com/trueagi-io/hyperon-experimental) (pre-alpha, version pinned in `requirements.txt`)
-- **Extraction:** `<Gemini model used>`
-- **Backend:** Python, FastAPI
-- **Frontend:** `<Streamlit / React>`
-- **Dev tooling:** Google Antigravity (see `AGENTS.md`)
+### Windows (PowerShell)
+```powershell
+git clone https://github.com/kaniska-praba007/fractional-approval-agent.git
+cd fractional-approval-agent
+powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1
+.\.venv\Scripts\Activate.ps1
+pytest -q
+streamlit run app/Home.py
+```
 
-## Quickstart
-
+### Linux / macOS (Bash)
 ```bash
-git clone https://github.com/<YOUR_USERNAME>/finance-trustgate.git && cd finance-trustgate
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env            # add your Gemini API key
-python -m src.smoke_test        # confirms hyperon works before anything else
-uvicorn src.api:app --reload
-pytest
+git clone https://github.com/kaniska-praba007/fractional-approval-agent.git
+cd fractional-approval-agent
+chmod +x scripts/setup.sh
+./scripts/setup.sh
+source .venv/bin/activate
+pytest -q
+streamlit run app/Home.py
 ```
 
-## Repo layout (target)
+---
+
+## Automated CI Guardrails
+
+Every commit and pull request is automatically verified by GitHub Actions (`.github/workflows/ci.yml`):
+1. **Decimal Guard in MeTTa:** Fails if decimal literals (`[0-9]+\.[0-9]+`) appear in `metta/*.metta`.
+2. **Python Floating Point & Silent Error Guard:** Fails if `float(`, bare `except:`, or `except Exception: pass` appear in `agent/` or `app/`.
+3. **Full Automated Test Suite:** Runs all unit, integration, MeTTa, and invariant tests via `pytest`.
+
+---
+
+## Repository Structure
 
 ```text
-finance-trustgate/
-├── README.md
-├── AGENTS.md              # canonical agent rules (Antigravity, Cursor, Claude Code, Codex)
-├── GEMINI.md              # pointer to AGENTS.md
-├── .agents/               # rules, workflows, skills for Antigravity
-├── src/
-│   ├── rules/approval.metta   # the symbolic decision logic
-│   ├── engine.py              # hyperon bridge + atom parsing
-│   ├── extract.py             # LLM extraction (structured facts only)
-│   ├── audit.py               # append-only audit log
-│   └── api.py
-├── data/cases.json
+fractional-approval-agent/
+├── README.md                  # Comprehensive architecture and onboarding guide
+├── AI_DISCLOSURE.md           # Mandatory AI tool and assistant disclosure log
+├── SUBMISSION.md              # Hackathon submission checklist
+├── AGENTS.md                  # Strict team invariants and agent instructions
+├── PROGRESS.md                # Sprint-by-sprint verifiable session log
+├── data/
+│   ├── artworks.json          # Synthetic catalog registry (integer cents & bps)
+│   └── audit_log.json         # SHA-256 hash-chained audit log
+├── metta/
+│   ├── royalties.metta        # Authoritative symbolic settlement & rejection rules
+│   └── tests/
+│       └── test_royalties.metta # Direct Hyperon assertEqual test assertions
+├── agent/
+│   ├── parser.py              # Rule-based NLP bid parser with injection defense
+│   ├── bridge.py              # Native Hyperon Atom API bridge & validator
+│   ├── settle.py              # End-to-end pipeline orchestrator
+│   ├── audit_log.py           # Append-only hash-chained audit trail & replay defense
+│   └── ledger.py              # Simulated double-entry ledger in integer cents
+├── app/
+│   ├── Home.py                # Streamlit compliance dashboard landing page
+│   ├── streamlit_app.py       # Standalone scenario proof viewer
+│   └── pages/                 # Multi-page compliance and treasury views
 ├── tests/
-└── docs/AUDIT_TRAIL_SAMPLE.md
+│   ├── oracle.py              # Isolated pure-integer reference test calculation
+│   ├── test_parser.py         # 49 NLP and adversarial injection tests
+│   ├── test_bridge_settlement.py # End-to-end symbolic reduction integration tests
+│   ├── test_audit.py          # Audit log cryptographic chain & replay tests
+│   └── test_ledger.py         # Double-entry balance sheet reconciliation tests
+└── scripts/
+    ├── setup.ps1              # Automated Windows setup script
+    └── setup.sh               # Automated POSIX setup script
 ```
 
-## AI Disclosure (mandatory)
+---
 
-**Core reasoning engine:** All approve/flag/reject decisions and confidence scores are produced by deterministic MeTTa rules (`src/rules/approval.metta`). No LLM makes or influences a verdict.
+## What We Build Next
+1. **On-Chain Settlement Adapters:** Connect canonical proofs to smart contract escrow release triggers on EVM / Algorand / Hedera.
+2. **Dynamic Cap-Table Governance:** Enable decentralized on-chain voting for estate-managed and DAO-owned art co-ops.
+3. **Hardware Enclave Signatures:** Sign verified proof atoms inside confidential computing enclaves (Intel SGX / AWS Nitro) before ledger commitment.
 
-**LLMs used, and where:**
-
-| Tool / model | Used for | Not used for |
-| --- | --- | --- |
-| `<Gemini model>` | Extracting structured fields from free-text applications at runtime | Any decision, confidence value, or override |
-| `<Antigravity / Gemini>` | Boilerplate, scaffolding, test generation, README drafting | Rule logic design (human-authored and reviewed) |
-| `<Other, e.g. Claude>` | `<e.g. brainstorming, use-case analysis>` | `<...>` |
-
-## What's next
-
-- Real KYC provider webhook integration
-- Visual rule editor so compliance teams can adjust MeTTa thresholds without touching code
-- Persistent Atomspace storage across sessions
-- Multi-asset portfolio concentration and cross-market risk rules on BASIX.Market
+---
 
 ## Team
 
-| Name | Role |
-| --- | --- |
-| `<Name>` | System / MeTTa lead |
-| `<Name>` | Frontend & UX |
-| `<Name>` | Data, docs & demo |
+- **Giridharan** — NLP Rule Parser, Documentation & AI Disclosure, Test Suite Hardening
+- **Kaniskapraba** — Core MeTTa Rules, AtomSpace Bridge, Pipeline Architecture
+- **Teammate 3** — Cryptographic Audit Trail & Replay Defense (`agent/audit_log.py`)
+- **Teammate 4** — Simulated Double-Entry Ledger (`agent/ledger.py`) & Streamlit Dashboard
+
+---
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
