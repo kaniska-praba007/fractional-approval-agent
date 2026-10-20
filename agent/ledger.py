@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from threading import RLock
+from typing import Any
 
 
 _LOCK = RLock()
@@ -157,6 +158,26 @@ def balances_by_currency() -> dict[str, dict[str, int]]:
                 currency_balances.get(account, 0) + entry["amount"]
             )
         return result
+
+def status() -> dict[str, Any]:
+    """Return the operational status of the double-entry ledger.
+
+    Safely reports empty initial state without throwing unhandled exceptions.
+    """
+    with _LOCK:
+        if not _TRANSACTIONS:
+            return {
+                "status": "LEDGER_INITIALIZED_ZERO_ENTRIES",
+                "transaction_count": 0,
+                "entry_count": 0,
+                "balances": {},
+            }
+        return {
+            "status": "ACTIVE",
+            "transaction_count": len(_TRANSACTIONS),
+            "entry_count": len(_ENTRIES),
+            "balances": balances(),
+        }
 
 
 def reset() -> None:

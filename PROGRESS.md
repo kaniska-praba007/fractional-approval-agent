@@ -516,3 +516,51 @@ The workflow file is committed at `.github/workflows/ci.yml`.
   - All currency formatted strictly via integer `divmod(abs(amount_minor), 100)`.
   - Untracked `data/audit_log.json` remained uninspected, unstaged, and unmodified.
 - **Full Test Suite Status:** **141 passed, 1 xfailed in 25.89s**.
+---
+
+### 15. Executive Visual Hierarchy & Dual Money Formatting (Task ui/visual-hierarchy: VERIFIED)
+
+- **Framing & Tone Alignment:**
+  - Upgraded header to: `"HFAS #BuyBlackArt — Fractional Approval & Settlement Engine (Proposal Architecture)"`.
+  - Added subtitle emphasizing deterministic neuro-symbolic fiduciary settlement powered by MeTTa / Hyperon.
+  - Prominently rendered synthetic data benchmark disclaimer referencing the Harlem Fine Arts Show (#BuyBlackArt) brief.
+- **Dual Plain-English Integer Money Formatting (`divmod`):**
+  - Implemented `format_money_dual(amount_minor, currency)` rendering `"$10,000.00 USD (1,000,000 cents)"` using strictly integer `divmod(abs(amount_minor), 100)`. Zero floats (`float()`, `val / 100`, or `round()`) throughout.
+  - Implemented `format_money_short(amount_minor, currency)` rendering `"$10,000.00 USD"`.
+  - Maintained backward-compatible alias `format_currency`.
+- **4 Role-Oriented Workflow Tabs:**
+  - **Tab 1: "Marketplace Settlement":** Executive curator console defaulting to `HFA-101` ($10,000.00 USD / 1,000,000 cents). Displays executive 4-metric grid (Gross Sale Price, Artist Royalty [Droit de Suite], Community Preservation Fund, Fractional Net Pool). Segregated synthetic stress-test fixtures (`TEST-DUST`, `TEST-KES`, `TEST-FEE`, and rejected scenarios) inside a collapsed `"Stress-Test & Cross-Border Benchmarks"` expander.
+  - **Tab 2: "Fiduciary Manager Override":** Dedicated governance portal with prominent statutory floor invariant warning (1,000 bps / 10.00% floor), mandatory rationale field (>= 15 characters), floor comparison check, and MeTTa evaluation.
+  - **Tab 3: "Immutable Audit Log":** Verifiable SHA-256 block timeline displaying block indices, nonces, timestamps, block hashes (`item.get("hash")`), previous hashes, and formatted gross amounts.
+  - **Tab 4: "Artwork & Cap Table Registry":** Smart contract covenant explorer and cap table viewer with dual-formatted reserve prices.
+- **Modern Streamlit API & Layout Resilience:**
+  - Replaced all deprecated `use_container_width=True` calls with `width="stretch"`.
+  - Confined all raw proof JSON structures inside collapsed expanders labeled `"Raw proof"`.
+- **Verification Commands:**
+  - `git grep -nE "float\(" agent app` -> 0 matches.
+  - `git grep -nE "/ 100|/100" app/` -> 0 matches.
+  - `git grep -n "use_container_width" app/` -> 0 matches.
+  - `pytest -q` -> **141 passed, 1 xfailed in 32.82s**.
+
+---
+
+### 16. Backend Fiduciary Resilience & Edge-Case Guards (Task fix/fiduciary-resilience: VERIFIED)
+
+- **Ledger Empty-State Guard (`agent/ledger.py`):**
+  - Implemented `ledger.status()` returning `{"status": "LEDGER_INITIALIZED_ZERO_ENTRIES", "transaction_count": 0, "entry_count": 0, "balances": {}}` when 0 transactions exist, guaranteeing no ambiguous states or unhandled exceptions.
+  - Confirmed `balances()`, `balances_by_currency()`, and `verify()` return `{}` and `True` on an untouched/reset ledger.
+- **Audit Log Structured Verification & Empty-State (`agent/audit_log.py`):**
+  - Added `verify_chain_details() -> dict[str, Any]` returning structured validation metadata (`verified: bool`, `block_count: int`, `status: str`).
+  - Preserved `verify_chain() -> bool` for full backwards compatibility.
+- **Duplicate Nonce & Replay Defense (`agent/settle.py` & `agent/audit_log.py`):**
+  - `settle()` checks `audit.seen_nonce(nonce)` before invoking MeTTa reasoning, returning a structured rejection proof (`status: "REJECTED"`, `reason_code: "DUPLICATE_NONCE"`, `producing_layer: "audit_log"`).
+  - Enhanced `agent.audit_log.append()` to capture duplicate nonce rejection proofs in the append-only SHA-256 chain (disambiguating replay entries via `nonce#rejected-<idx>`), ensuring rejections are recorded while preserving chain integrity and preventing double-spending.
+  - The ledger posts 0 transactions for rejected proofs.
+- **Zero-Float & Monetary Division Compliance:**
+  - `git grep -nE "float\(|/ 100|/100" agent/` -> 0 matches.
+  - Single-cent dust remainder in MeTTa routes deterministically to the Community Fund (`$comm-total = (+ $comm $dust)`).
+- **Test Suite Status:**
+  - Added unit tests `test_ledger_empty_state_returns_clean_status`, `test_audit_verify_chain_details_structured`, and `test_duplicate_nonce_returns_structured_rejection_and_logs`.
+  - **Full Test Suite Status:** **144 passed, 1 xfailed in 17.03s**.
+
+

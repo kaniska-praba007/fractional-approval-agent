@@ -7,6 +7,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 from threading import RLock
+from typing import Any
 
 
 GENESIS_HASH = "0" * 64
@@ -113,18 +114,21 @@ def append(proof: dict, nonce: str) -> dict:
         entries = _read()
         if not _verify(entries):
             raise AuditError("AUDIT_CHAIN_INVALID")
-        if any(e["nonce"] == nonce for e in entries):
-            raise AuditError("DUPLICATE_NONCE")
+        actual_nonce = nonce
+        if any(e["nonce"] == nonce or e["nonce"].startswith(f"{nonce}#") for e in entries):
+            if proof.get("status") != "REJECTED":
+                raise AuditError("DUPLICATE_NONCE")
+            actual_nonce = f"{nonce}#rejected-{len(entries)}"
 
         previous = entries[-1]["hash"] if entries else GENESIS_HASH
         timestamp = datetime.now(timezone.utc).isoformat(timespec="microseconds")
         entry = {
             "index": len(entries),
             "timestamp": timestamp,
-            "nonce": nonce,
+            "nonce": actual_nonce,
             "proof": json.loads(proof_payload),
             "prev_hash": previous,
-            "hash": _hash(previous, timestamp, nonce, proof_payload),
+            "hash": _hash(previous, timestamp, actual_nonce, proof_payload),
         }
         _write(entries + [entry])
         return json.loads(json.dumps(entry))
@@ -139,6 +143,31 @@ def verify_chain() -> bool:
             return False
 
 
+def verify_chain_details() -> dict[str, Any]:
+    """Verify SHA-256 chain links across all blocks and return structured validation metadata."""
+    with _LOCK:
+        try:
+            entries = _read()
+            if not entries:
+                return {
+                    "verified": True,
+                    "block_count": 0,
+                    "status": "AUDIT_LOG_EMPTY_GENESIS",
+                }
+            is_valid = _verify(entries)
+            return {
+                "verified": is_valid,
+                "block_count": len(entries),
+                "status": "VALID" if is_valid else "CORRUPTED",
+            }
+        except AuditError as exc:
+            return {
+                "verified": False,
+                "block_count": 0,
+                "status": f"ERROR_{exc}",
+            }
+
+
 def seen_nonce(nonce: str) -> bool:
     """Return True if a nonce is already present in the valid log."""
     if not isinstance(nonce, str) or not nonce:
@@ -147,4 +176,7 @@ def seen_nonce(nonce: str) -> bool:
         entries = _read()
         if not _verify(entries):
             raise AuditError("AUDIT_CHAIN_INVALID")
-        return any(entry["nonce"] == nonce for entry in entries)
+        return any(
+            entry["nonce"] == nonce or entry["nonce"].startswith(f"{nonce}#")
+            for entry in entries
+        )
