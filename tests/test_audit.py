@@ -5,7 +5,13 @@ import json
 import pytest
 
 from agent import audit_log
-from agent.audit_log import AuditError, append, verify_chain, seen_nonce
+from agent.audit_log import (
+    AuditError,
+    append,
+    seen_nonce,
+    verify_chain,
+    verify_chain_details,
+)
 
 
 SAMPLE_PROOF = {
@@ -84,3 +90,46 @@ def test_corrupted_chain_blocks_append():
 
     with pytest.raises(AuditError, match="AUDIT_CHAIN_INVALID"):
         append(SAMPLE_PROOF, nonce="nonce-second")
+
+
+def test_audit_verify_chain_details_structured():
+    details = verify_chain_details()
+    assert details["verified"] is True
+    assert details["block_count"] == 0
+    assert details["status"] == "AUDIT_LOG_EMPTY_GENESIS"
+
+    append(SAMPLE_PROOF, nonce="nonce-struct-01")
+    append(SAMPLE_PROOF, nonce="nonce-struct-02")
+
+    details = verify_chain_details()
+    assert details["verified"] is True
+    assert details["block_count"] == 2
+    assert details["status"] == "VALID"
+
+
+def test_duplicate_nonce_returns_structured_rejection_and_logs():
+    from agent.settle import settle
+
+    nonce = "nonce-settle-replay-999"
+    req = {
+        "artwork_id": "HFA-101",
+        "gross_minor": 1000000,
+        "currency": "USD",
+        "nonce": nonce,
+    }
+
+    first_res = settle(req, audit=audit_log)
+    assert first_res["status"] == "APPROVED"
+    assert seen_nonce(nonce) is True
+
+    replay_res = settle(req, audit=audit_log)
+    assert replay_res["status"] == "REJECTED"
+    assert replay_res["reason_code"] == "DUPLICATE_NONCE"
+    assert replay_res["producing_layer"] == "audit_log"
+
+    entries = json.loads(audit_log.AUDIT_LOG_PATH.read_text(encoding="utf-8"))
+    assert len(entries) == 2
+    assert entries[0]["proof"]["status"] == "APPROVED"
+    assert entries[1]["proof"]["status"] == "REJECTED"
+    assert entries[1]["proof"]["reason_code"] == "DUPLICATE_NONCE"
+    assert verify_chain() is True

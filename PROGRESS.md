@@ -511,3 +511,25 @@ The workflow file is committed at `.github/workflows/ci.yml`.
   - `git grep -n "use_container_width" app/` -> 0 matches.
   - `pytest -q` -> **141 passed, 1 xfailed in 32.82s**.
 
+---
+
+### 16. Backend Fiduciary Resilience & Edge-Case Guards (Task fix/fiduciary-resilience: VERIFIED)
+
+- **Ledger Empty-State Guard (`agent/ledger.py`):**
+  - Implemented `ledger.status()` returning `{"status": "LEDGER_INITIALIZED_ZERO_ENTRIES", "transaction_count": 0, "entry_count": 0, "balances": {}}` when 0 transactions exist, guaranteeing no ambiguous states or unhandled exceptions.
+  - Confirmed `balances()`, `balances_by_currency()`, and `verify()` return `{}` and `True` on an untouched/reset ledger.
+- **Audit Log Structured Verification & Empty-State (`agent/audit_log.py`):**
+  - Added `verify_chain_details() -> dict[str, Any]` returning structured validation metadata (`verified: bool`, `block_count: int`, `status: str`).
+  - Preserved `verify_chain() -> bool` for full backwards compatibility.
+- **Duplicate Nonce & Replay Defense (`agent/settle.py` & `agent/audit_log.py`):**
+  - `settle()` checks `audit.seen_nonce(nonce)` before invoking MeTTa reasoning, returning a structured rejection proof (`status: "REJECTED"`, `reason_code: "DUPLICATE_NONCE"`, `producing_layer: "audit_log"`).
+  - Enhanced `agent.audit_log.append()` to capture duplicate nonce rejection proofs in the append-only SHA-256 chain (disambiguating replay entries via `nonce#rejected-<idx>`), ensuring rejections are recorded while preserving chain integrity and preventing double-spending.
+  - The ledger posts 0 transactions for rejected proofs.
+- **Zero-Float & Monetary Division Compliance:**
+  - `git grep -nE "float\(|/ 100|/100" agent/` -> 0 matches.
+  - Single-cent dust remainder in MeTTa routes deterministically to the Community Fund (`$comm-total = (+ $comm $dust)`).
+- **Test Suite Status:**
+  - Added unit tests `test_ledger_empty_state_returns_clean_status`, `test_audit_verify_chain_details_structured`, and `test_duplicate_nonce_returns_structured_rejection_and_logs`.
+  - **Full Test Suite Status:** **144 passed, 1 xfailed in 17.03s**.
+
+
