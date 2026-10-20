@@ -322,13 +322,39 @@ The workflow file is committed at `.github/workflows/ci.yml`.
 - **Cross-Reference Hygiene:**
   - Updated `docs/START_HERE.md` to link directly to `docs/FLOWS.md` with relative links.
 
+### 10. Platform Fee Rounding & Multi-Currency Edge Cases (Task 1.5: VERIFIED)
+- **Edge Case Scenarios (SC-10, SC-11, SC-12):**
+  - `SC-10`: `TEST-FEE` benchmark artwork with 250 bps platform fee sold at 1,000,033 USD cents. Exercises integer floor division rounding on fee remainder (fee: 25,000 cents; net: 975,033 cents; artist: 97,503 cents; community: 19,500 cents; pool: 858,030 cents).
+  - `SC-11`: `TEST-KES` benchmark artwork denominated and transacted in Kenyan Shillings (KES). Proves rules are not USD-hardcoded; settles 1,000,000.00 KES (100,000,000 minor units).
+  - `SC-12`: `TEST-KES` sold in USD; proves currency mismatch rejection with `UNSUPPORTED_CURRENCY` and zero disbursed payouts.
+- **Independent Test Oracle & Scenario Definitions:**
+  - Added scenario JSONs in `tests/scenarios/sc10_platform_fee.json`, `sc11_kes_currency.json`, `sc12_kes_currency_mismatch.json`.
+  - Added independent reference calculations in `tests/test_oracle.py`.
+- **Synthetic Registry Expansion (`data/artworks.json`):**
+  - Registered `TEST-FEE` and `TEST-KES` with validated cap tables summing to 10,000 bps, integer bps, floor <= royalty covenants, and synthetic tags.
+  - Updated `tests/test_registry.py` to enforce registry business rules on the expanded asset catalog.
+- **MeTTa Rules Robustness (Zero Rule Changes Needed):**
+  - Verified that `metta/royalties.metta` required **0 modifications**. The symbolic engine's `execute-settlement` and `evaluate-resale` already supported arbitrary currencies and platform fee slots natively.
+- **Multi-Asset Invariant Fuzz Testing:**
+  - Extended 200-iteration pseudo-random fuzz test in `tests/test_oracle.py` and 20-iteration fuzz test in `tests/test_bridge_settlement.py` across all registered artworks (including KES and fee assets).
+  - Verified exact monetary conservation invariant across all randomized transactions: `gross == fee + artist + community + sum(coowners) + dust`.
+- **Canonical Fixtures Regeneration (`tests/fixtures/proofs/`):**
+  - Generated `sc10_platform_fee.json`, `sc11_kes_currency.json`, and `sc12_kes_currency_mismatch.json` (labeled `producing_layer: "bridge/MeTTa"`).
+  - Verified that all existing fixtures `sc01..sc09` remained 100% unchanged.
+- **Documentation Updates:**
+  - Updated scenario mapping table in `docs/FLOWS.md`.
+  - Added fee and currency scope decision to `docs/DECISIONS.md`.
+  - Added `metta/1.5-edge-cases` to `docs/BRANCHES.md`.
+  - Added currency string and minor units note to `docs/PROOF_SHAPE.md`.
+- **Full Test Suite Status:** **51 passed, 12 xfailed in 15.93s**.
+
 ---
 
 ## Next Steps & Roadmap
 
-1. **Open Pull Request for Scaffold 0.5 & Flows 0.6:**
-   - Merge `scaffold/0.5-teammate-boilerplate` into `main` after review.
-2. **Launch Teammate Branches (via `docs/ISSUES_TO_CREATE.md` & `docs/TEAM_PROMPTS.md`):**
+1. **Open Pull Request for Edge Cases 1.5:**
+   - Merge `metta/1.5-edge-cases` into `main` after review.
+2. **Launch Teammate Sprint Branches (via `docs/ISSUES_TO_CREATE.md` & `docs/TEAM_PROMPTS.md`):**
    - Teammate 1: `agent/2.4-audit-log` (hash-chained audit log & nonce replay defense).
    - Teammate 2: `parser/3.1-rule-parser` (rule-based NLP parser & prompt injection defense).
    - Teammate 3: `agent/2.6-sim-ledger` (simulated double-entry ledger in integer cents).
