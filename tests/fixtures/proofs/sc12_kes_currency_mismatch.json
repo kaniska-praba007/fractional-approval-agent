@@ -1,0 +1,14 @@
+{
+  "status": "REJECTED",
+  "reason_code": "UNSUPPORTED_CURRENCY",
+  "artwork_id": "TEST-KES",
+  "currency": "USD",
+  "gross": 1000000,
+  "fee": 0,
+  "artist": 0,
+  "community": 0,
+  "dust": 0,
+  "pool": 0,
+  "coowners": [],
+  "producing_layer": "bridge/MeTTa"
+}
