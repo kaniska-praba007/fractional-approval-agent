@@ -1,4 +1,4 @@
-# Finance TrustGate: Fractional Approval Agent
+# CuraFide - Fiduciary Fractional Settlement Agent
 > **#BuyBlackArt on BASIX.Market**
 
 [![CI](https://github.com/kaniska-praba007/fractional-approval-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/kaniska-praba007/fractional-approval-agent/actions/workflows/ci.yml)
@@ -6,7 +6,7 @@
 [![Python: 3.12](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/)
 [![Symbolic Engine: Hyperon 0.2.10](https://img.shields.io/badge/symbolic-Hyperon%200.2.10-purple)](https://github.com/trueagi-io/hyperon-experimental)
 
-**Track:** Track 02: Builders — Advanced  
+**Track:** Track 03: Next Level Devs 
 **Challenge:** Challenge 01: Trusted With Money (HFAS Brief: #BuyBlackArt)
 
 ---
@@ -180,10 +180,10 @@ fractional-approval-agent/
 
 ## Team
 
-- **Giridharan** — NLP Rule Parser, Documentation & AI Disclosure, Test Suite Hardening
-- **Kaniskapraba** — Core MeTTa Rules, AtomSpace Bridge, Pipeline Architecture
-- **Teammate 3** — Cryptographic Audit Trail & Replay Defense (`agent/audit_log.py`)
-- **Teammate 4** — Simulated Double-Entry Ledger (`agent/ledger.py`) & Streamlit Dashboard
+- **Giridharan K** — NLP Rule Parser, Documentation & AI Disclosure, Test Suite Hardening
+- **Harish Mohan** — Core MeTTa Rules, AtomSpace Bridge, Pipeline Architecture
+- **Rakshitha** — Cryptographic Audit Trail & Replay Defense (`agent/audit_log.py`) & Simulated Double-Entry Ledger (`agent/ledger.py`)
+- **Harish Mohan** - Streamlit Dashboard & UI 
 
 ---
 
