@@ -181,7 +181,7 @@ fractional-approval-agent/
 ## Team
 
 - **Giridharan K** — NLP Rule Parser, Documentation & AI Disclosure, Test Suite Hardening
-- **Harish Mohan** — Core MeTTa Rules, AtomSpace Bridge, Pipeline Architecture
+- **Kaniska P** — Core MeTTa Rules, AtomSpace Bridge, Pipeline Architecture
 - **Rakshitha** — Cryptographic Audit Trail & Replay Defense (`agent/audit_log.py`) & Simulated Double-Entry Ledger (`agent/ledger.py`)
 - **Harish Mohan** - Streamlit Dashboard & UI 
 
